@@ -1,35 +1,7 @@
 {
   "version": 2,
-  "functions": {
-    "api/index.php": {
-      "runtime": "vercel-php@0.6.0"
-    }
-  },
-  "routes": [
-    {
-      "src": "/",
-      "dest": "/public/styleai-widget.html"
-    },
-    {
-      "src": "/styleai-widget.html",
-      "dest": "/public/styleai-widget.html"
-    },
-    {
-      "src": "/color-style-demo.html", 
-      "dest": "/public/color-style-demo.html"
-    },
-    {
-      "src": "/auth-confirm.html",
-      "dest": "/public/auth-confirm.html"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.php"
-    }
-  ],
-  "env": {
-    "APP_ENV": "production",
-    "APP_DEBUG": "false",
-    "APP_URL": "https://your-domain.vercel.app"
-  }
+  "buildCommand": "echo 'Static site - no build needed'",
+  "outputDirectory": "public",
+  "cleanUrls": false,
+  "trailingSlash": false
 }
