@@ -3,7 +3,8 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vite build",
+        "build": "vite build && echo 'Build completed'",
+        "vercel-build": "echo 'Vercel build - no frontend build needed'",
         "type-check": "tsc --noEmit",
         "storybook": "storybook dev -p 6006",
         "build-storybook": "storybook build"
