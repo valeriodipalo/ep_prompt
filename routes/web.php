@@ -17,11 +17,11 @@ use Inertia\Inertia;
 */
 
 Route::get('/', function () {
-    return Inertia::render('Home', [
-        'title' => 'Laravel 10 + Nova + Inertia + React + Breeze',
-        'message' => 'Congratulazioni! La tua applicazione è configurata con Laravel, Nova (Admin), Inertia, React e Breeze (Auth) completo!',
+    return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
+        'laravelVersion' => Application::VERSION,
+        'phpVersion' => PHP_VERSION,
     ]);
 });
 
@@ -33,6 +33,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // Transform routes
+    Route::get('/transform', function () {
+        return Inertia::render('Transform');
+    })->name('transform');
 });
 
 require __DIR__.'/auth.php';
