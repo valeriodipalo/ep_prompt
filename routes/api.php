@@ -16,6 +16,16 @@ use App\Http\Controllers\SupabaseController;
 |
 */
 
+// Health check endpoint for Railway
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toISOString(),
+        'service' => 'StyleAI Professional API',
+        'laravel_version' => app()->version()
+    ]);
+});
+
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
