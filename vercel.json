@@ -1,46 +1,11 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "public/styleai-widget.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "public/color-style-demo.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "public/auth-confirm.html",
-      "use": "@vercel/static"
-    }
-  ],
+  "buildCommand": "echo 'No build required'",
+  "outputDirectory": "public",
   "routes": [
     {
       "src": "/",
-      "dest": "/public/styleai-widget.html"
-    },
-    {
-      "src": "/styleai-widget.html",
-      "dest": "/public/styleai-widget.html"
-    },
-    {
-      "src": "/color-style-demo.html",
-      "dest": "/public/color-style-demo.html"
-    },
-    {
-      "src": "/auth-confirm.html",
-      "dest": "/public/auth-confirm.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/public/styleai-widget.html",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        }
-      ]
+      "dest": "/styleai-widget.html"
     }
   ]
 }
