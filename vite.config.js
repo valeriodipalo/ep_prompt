@@ -1,19 +1,18 @@
 import { defineConfig } from 'vite';
-import laravel from 'laravel-vite-plugin';
-import react from '@vitejs/plugin-react';
-import path from 'path';
+import { resolve } from 'path';
 
 export default defineConfig({
-    plugins: [
-        laravel({
-            input: 'resources/js/app.jsx',
-            refresh: true,
-        }),
-        react(),
-    ],
-    resolve: {
-        alias: {
-            '@': path.resolve(__dirname, './resources/js'),
+    build: {
+        rollupOptions: {
+            input: {
+                main: resolve(__dirname, 'index.html'),
+                widget: resolve(__dirname, 'public/styleai-widget.html'),
+                demo: resolve(__dirname, 'public/color-style-demo.html'),
+                auth: resolve(__dirname, 'public/auth-confirm.html')
+            }
         },
+        outDir: 'dist',
+        copyPublicDir: true
     },
+    publicDir: 'public'
 });

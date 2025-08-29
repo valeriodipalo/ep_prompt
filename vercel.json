@@ -1,7 +1,20 @@
 {
   "version": 2,
-  "buildCommand": "echo 'Static site - no build needed'",
-  "outputDirectory": "public",
-  "cleanUrls": false,
-  "trailingSlash": false
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "rewrites": [
+    {
+      "source": "/styleai-widget.html",
+      "destination": "/public/styleai-widget.html"
+    },
+    {
+      "source": "/color-style-demo.html",
+      "destination": "/public/color-style-demo.html"
+    },
+    {
+      "source": "/auth-confirm.html",
+      "destination": "/public/auth-confirm.html"
+    }
+  ]
 }
