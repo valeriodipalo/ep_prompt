@@ -3,266 +3,520 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 /**
- * Style Controller
- * Manages hairstyles and colors, including premium content
+ * StyleAI Controller - Freemium Hairstyle & Color Catalog
+ * 
+ * Features:
+ * - 7 Free styles (Anchor): Fade variants, Crew Cut, Pompadour, Undercut, Bald
+ * - 12 Premium styles (Try-on): Advanced and specialized cuts
+ * - Categorized by: Short, Medium, Long, Professional, Trendy, Cultural_Identity, No_Hair
+ * - Comprehensive color palette: Natural, Modern, Creative
  */
 class StyleController extends Controller
 {
     /**
-     * Get all available styles with premium indicators
+     * Get available hairstyles with freemium model
      */
-    public function getStyles(Request $request)
+    public function getStyles(Request $request): JsonResponse
     {
-        $userIsPremium = $request->boolean('is_premium', false);
+        $isPremium = $request->boolean('is_premium', false);
+        $category = $request->query('category');
 
         $styles = [
-            // Free styles (available to everyone)
+            // ========== ANCHOR STYLES (FREE) ==========
             [
-                'id' => 'short_classic',
-                'name' => 'Short Classic',
-                'gender' => 'both',
-                'is_premium' => false,
-                'preview_url' => '/images/styles/short_classic.jpg',
-                'description' => 'Classic short hairstyle'
+                'id' => 'fade_low',
+                'name' => 'Low Fade',
+                'description' => 'Clean low fade with gradual transition',
+                'category' => 'Short',
+                'complexity' => 'medium',
+                'is_free' => true,
+                'preview_url' => '/images/styles/fade_low.jpg',
+                'default_colors' => ['black', 'dark-brown', 'medium-brown', 'blonde'],
+                'prompt_template' => 'low fade haircut with gradual transition'
             ],
             [
-                'id' => 'medium_waves',
-                'name' => 'Medium Waves',
-                'gender' => 'both',
-                'is_premium' => false,
-                'preview_url' => '/images/styles/medium_waves.jpg',
-                'description' => 'Natural wavy medium-length hair'
+                'id' => 'fade_mid',
+                'name' => 'Mid Fade',
+                'description' => 'Classic mid-level fade cut',
+                'category' => 'Short',
+                'complexity' => 'medium',
+                'is_free' => true,
+                'preview_url' => '/images/styles/fade_mid.jpg',
+                'default_colors' => ['black', 'dark-brown', 'medium-brown', 'blonde'],
+                'prompt_template' => 'mid fade haircut with clean sides'
             ],
             [
-                'id' => 'long_straight',
-                'name' => 'Long Straight',
-                'gender' => 'both',
-                'is_premium' => false,
-                'preview_url' => '/images/styles/long_straight.jpg',
-                'description' => 'Long straight hair'
+                'id' => 'fade_high',
+                'name' => 'High Fade',
+                'description' => 'Sharp high fade for modern look',
+                'category' => 'Short',
+                'complexity' => 'medium',
+                'is_free' => true,
+                'preview_url' => '/images/styles/fade_high.jpg',
+                'default_colors' => ['black', 'dark-brown', 'medium-brown', 'blonde'],
+                'prompt_template' => 'high fade haircut with sharp contrast'
+            ],
+            [
+                'id' => 'crew_cut',
+                'name' => 'Crew Cut',
+                'description' => 'Professional short military-style cut',
+                'category' => 'Professional',
+                'complexity' => 'low',
+                'is_free' => true,
+                'preview_url' => '/images/styles/crew_cut.jpg',
+                'default_colors' => ['black', 'dark-brown', 'medium-brown', 'gray'],
+                'prompt_template' => 'crew cut military style haircut'
+            ],
+            [
+                'id' => 'pompadour',
+                'name' => 'Pompadour',
+                'description' => 'Classic vintage voluminous style',
+                'category' => 'Professional',
+                'complexity' => 'high',
+                'is_free' => true,
+                'preview_url' => '/images/styles/pompadour.jpg',
+                'default_colors' => ['black', 'dark-brown', 'blonde', 'gray'],
+                'prompt_template' => 'classic pompadour with volume and height'
+            ],
+            [
+                'id' => 'undercut',
+                'name' => 'Undercut',
+                'description' => 'Trendy disconnected undercut',
+                'category' => 'Trendy',
+                'complexity' => 'medium',
+                'is_free' => true,
+                'preview_url' => '/images/styles/undercut.jpg',
+                'default_colors' => ['black', 'dark-brown', 'blonde', 'ash-blonde'],
+                'prompt_template' => 'undercut with disconnected sides'
+            ],
+            [
+                'id' => 'bald',
+                'name' => 'Bald',
+                'description' => 'Clean shaved head',
+                'category' => 'No_Hair',
+                'complexity' => 'low',
+                'is_free' => true,
+                'preview_url' => '/images/styles/bald.jpg',
+                'default_colors' => [], // No colors needed
+                'prompt_template' => 'completely bald shaved head'
             ],
 
-            // Premium styles (require subscription or premium tokens)
+            // ========== PREMIUM STYLES (TRY-ON) ==========
             [
-                'id' => 'pixie_textured',
-                'name' => 'Textured Pixie',
-                'gender' => 'female',
-                'is_premium' => true,
-                'preview_url' => '/images/styles/pixie_textured.jpg',
-                'description' => 'Modern textured pixie cut with layers'
+                'id' => 'buzz_cut',
+                'name' => 'Buzz Cut',
+                'description' => 'Ultra-short all-over buzz',
+                'category' => 'Short',
+                'complexity' => 'low',
+                'is_free' => false,
+                'preview_url' => '/images/styles/buzz_cut.jpg',
+                'default_colors' => ['black', 'dark-brown', 'medium-brown', 'gray'],
+                'prompt_template' => 'buzz cut very short all over'
             ],
             [
-                'id' => 'undercut_fade',
-                'name' => 'Undercut Fade',
-                'gender' => 'male',
-                'is_premium' => true,
-                'preview_url' => '/images/styles/undercut_fade.jpg',
-                'description' => 'Sharp undercut with fade transition'
+                'id' => 'ivy_league',
+                'name' => 'Ivy League',
+                'description' => 'Sophisticated Ivy League cut',
+                'category' => 'Professional',
+                'complexity' => 'medium',
+                'is_free' => false,
+                'preview_url' => '/images/styles/ivy_league.jpg',
+                'default_colors' => ['dark-brown', 'medium-brown', 'blonde', 'gray'],
+                'prompt_template' => 'ivy league haircut with side part'
             ],
             [
-                'id' => 'beach_waves',
-                'name' => 'Beach Waves',
-                'gender' => 'female',
-                'is_premium' => true,
-                'preview_url' => '/images/styles/beach_waves.jpg',
-                'description' => 'Effortless beach wave texture'
+                'id' => 'quiff',
+                'name' => 'Quiff',
+                'description' => 'Modern textured quiff style',
+                'category' => 'Professional',
+                'complexity' => 'medium',
+                'is_free' => false,
+                'preview_url' => '/images/styles/quiff.jpg',
+                'default_colors' => ['dark-brown', 'blonde', 'ash-blonde', 'chestnut'],
+                'prompt_template' => 'modern quiff with textured volume'
+            ],
+            [
+                'id' => 'french_crop',
+                'name' => 'French Crop',
+                'description' => 'Textured crop with fringe',
+                'category' => 'Short',
+                'complexity' => 'medium',
+                'is_free' => false,
+                'preview_url' => '/images/styles/french_crop.jpg',
+                'default_colors' => ['dark-brown', 'medium-brown', 'blonde', 'ash-blonde'],
+                'prompt_template' => 'french crop with textured fringe'
+            ],
+            [
+                'id' => 'caesar_cut',
+                'name' => 'Caesar Cut',
+                'description' => 'Classic Roman-inspired cut',
+                'category' => 'Short',
+                'complexity' => 'low',
+                'is_free' => false,
+                'preview_url' => '/images/styles/caesar_cut.jpg',
+                'default_colors' => ['black', 'dark-brown', 'gray', 'medium-brown'],
+                'prompt_template' => 'caesar cut with forward fringe'
+            ],
+            [
+                'id' => 'slick_back',
+                'name' => 'Slick Back',
+                'description' => 'Elegant slicked-back style',
+                'category' => 'Professional',
+                'complexity' => 'medium',
+                'is_free' => false,
+                'preview_url' => '/images/styles/slick_back.jpg',
+                'default_colors' => ['black', 'dark-brown', 'gray', 'chestnut'],
+                'prompt_template' => 'slicked back hair with shine'
+            ],
+            [
+                'id' => 'textured_crop',
+                'name' => 'Textured Crop',
+                'description' => 'Modern textured short cut',
+                'category' => 'Short',
+                'complexity' => 'medium',
+                'is_free' => false,
+                'preview_url' => '/images/styles/textured_crop.jpg',
+                'default_colors' => ['dark-brown', 'blonde', 'ash-blonde', 'honey-blonde'],
+                'prompt_template' => 'textured crop with messy styling'
+            ],
+            [
+                'id' => 'curly_top_fade',
+                'name' => 'Curly Top Fade',
+                'description' => 'Fade with curly textured top',
+                'category' => 'Short',
+                'complexity' => 'high',
+                'is_free' => false,
+                'preview_url' => '/images/styles/curly_top_fade.jpg',
+                'default_colors' => ['black', 'dark-brown', 'medium-brown', 'auburn'],
+                'prompt_template' => 'curly top with faded sides'
+            ],
+            [
+                'id' => 'afro',
+                'name' => 'Afro',
+                'description' => 'Natural Afro hairstyle',
+                'category' => 'Cultural_Identity',
+                'complexity' => 'high',
+                'is_free' => false,
+                'preview_url' => '/images/styles/afro.jpg',
+                'default_colors' => ['black', 'dark-brown', 'medium-brown', 'auburn', 'gray'],
+                'prompt_template' => 'natural afro hairstyle with volume'
+            ],
+            [
+                'id' => 'dreadlocks',
+                'name' => 'Dreadlocks',
+                'description' => 'Traditional dreadlock style',
+                'category' => 'Cultural_Identity',
+                'complexity' => 'high',
+                'is_free' => false,
+                'preview_url' => '/images/styles/dreadlocks.jpg',
+                'default_colors' => ['black', 'dark-brown', 'auburn', 'blonde', 'gray'],
+                'prompt_template' => 'dreadlocks with natural texture'
             ],
             [
                 'id' => 'man_bun',
-                'name' => 'Modern Man Bun',
-                'gender' => 'male',
-                'is_premium' => true,
+                'name' => 'Man Bun',
+                'description' => 'Long hair tied in a bun',
+                'category' => 'Long',
+                'complexity' => 'high',
+                'is_free' => false,
                 'preview_url' => '/images/styles/man_bun.jpg',
-                'description' => 'Styled man bun with undercut sides'
+                'default_colors' => ['dark-brown', 'medium-brown', 'blonde', 'auburn', 'chestnut'],
+                'prompt_template' => 'man bun with long hair tied up'
             ],
             [
-                'id' => 'layered_bob',
-                'name' => 'Layered Bob',
-                'gender' => 'female',
-                'is_premium' => true,
-                'preview_url' => '/images/styles/layered_bob.jpg',
-                'description' => 'Sophisticated layered bob with movement'
+                'id' => 'top_knot',
+                'name' => 'Top Knot',
+                'description' => 'Medium length top knot',
+                'category' => 'Medium',
+                'complexity' => 'high',
+                'is_free' => false,
+                'preview_url' => '/images/styles/top_knot.jpg',
+                'default_colors' => ['black', 'dark-brown', 'blonde', 'ash-blonde'],
+                'prompt_template' => 'top knot with undercut sides'
+            ],
+            [
+                'id' => 'mohawk',
+                'name' => 'Mohawk',
+                'description' => 'Bold mohawk style',
+                'category' => 'Trendy',
+                'complexity' => 'high',
+                'is_free' => false,
+                'preview_url' => '/images/styles/mohawk.jpg',
+                'default_colors' => ['black', 'blonde', 'pastel-pink', 'neon-green', 'teal'],
+                'prompt_template' => 'mohawk with shaved sides and center strip'
+            ],
+            [
+                'id' => 'faux_hawk',
+                'name' => 'Faux Hawk',
+                'description' => 'Subtle faux hawk style',
+                'category' => 'Trendy',
+                'complexity' => 'high',
+                'is_free' => false,
+                'preview_url' => '/images/styles/faux_hawk.jpg',
+                'default_colors' => ['dark-brown', 'blonde', 'ash-blonde', 'honey-blonde'],
+                'prompt_template' => 'faux hawk with styled center'
+            ],
+            [
+                'id' => 'long_layered',
+                'name' => 'Long Layered',
+                'description' => 'Long layered hairstyle',
+                'category' => 'Long',
+                'complexity' => 'high',
+                'is_free' => false,
+                'preview_url' => '/images/styles/long_layered.jpg',
+                'default_colors' => ['dark-brown', 'medium-brown', 'blonde', 'auburn', 'balayage-ombre', 'chestnut'],
+                'prompt_template' => 'long layered hair with movement'
             ]
         ];
 
-        // Filter styles based on premium status
-        $availableStyles = array_filter($styles, function ($style) use ($userIsPremium) {
-            return !$style['is_premium'] || $userIsPremium;
+        // Filter by premium status
+        $filteredStyles = array_filter($styles, function($style) use ($isPremium) {
+            return $style['is_free'] || $isPremium;
         });
+
+        // Filter by category if specified
+        if ($category) {
+            $filteredStyles = array_filter($filteredStyles, function($style) use ($category) {
+                return $style['category'] === $category;
+            });
+        }
 
         return response()->json([
             'success' => true,
-            'styles' => array_values($availableStyles),
+            'styles' => array_values($filteredStyles),
+            'categories' => ['Short', 'Medium', 'Long', 'Professional', 'Trendy', 'Cultural_Identity', 'No_Hair'],
             'total_styles' => count($styles),
-            'available_styles' => count($availableStyles),
-            'premium_styles_locked' => !$userIsPremium ? count($styles) - count($availableStyles) : 0
+            'available_styles' => count($filteredStyles),
+            'free_styles' => count(array_filter($styles, fn($s) => $s['is_free'])),
+            'premium_styles' => count(array_filter($styles, fn($s) => !$s['is_free'])),
+            'premium_required' => !$isPremium
         ]);
     }
 
     /**
-     * Get all available colors with premium indicators
+     * Get available colors with comprehensive palette
      */
-    public function getColors(Request $request)
+    public function getColors(Request $request): JsonResponse
     {
-        $userIsPremium = $request->boolean('is_premium', false);
+        $isPremium = $request->boolean('is_premium', false);
+        $category = $request->query('category');
 
         $colors = [
-            // Free colors (available to everyone)
+            // ========== NATURAL COLORS (FREE) ==========
             [
-                'id' => 'natural_brown',
-                'name' => 'Natural Brown',
-                'hex' => '#8B4513',
+                'id' => 'black',
+                'name' => 'Black',
+                'hex' => '#1a1a1a',
+                'category' => 'Natural',
                 'is_premium' => false,
-                'description' => 'Rich natural brown'
+                'description' => 'Deep natural black'
             ],
             [
-                'id' => 'classic_black',
-                'name' => 'Classic Black',
-                'hex' => '#000000',
+                'id' => 'dark-brown',
+                'name' => 'Dark Brown',
+                'hex' => '#3c2415',
+                'category' => 'Natural',
                 'is_premium' => false,
-                'description' => 'Deep classic black'
+                'description' => 'Rich dark brown'
             ],
             [
-                'id' => 'honey_blonde',
+                'id' => 'medium-brown',
+                'name' => 'Medium Brown',
+                'hex' => '#8b4513',
+                'category' => 'Natural',
+                'is_premium' => false,
+                'description' => 'Warm medium brown'
+            ],
+            [
+                'id' => 'blonde',
+                'name' => 'Blonde',
+                'hex' => '#ffd700',
+                'category' => 'Natural',
+                'is_premium' => false,
+                'description' => 'Classic golden blonde'
+            ],
+            [
+                'id' => 'auburn',
+                'name' => 'Auburn',
+                'hex' => '#a52a2a',
+                'category' => 'Natural',
+                'is_premium' => false,
+                'description' => 'Rich auburn red'
+            ],
+            [
+                'id' => 'ginger',
+                'name' => 'Ginger',
+                'hex' => '#b06500',
+                'category' => 'Natural',
+                'is_premium' => false,
+                'description' => 'Vibrant ginger red'
+            ],
+            [
+                'id' => 'gray',
+                'name' => 'Gray',
+                'hex' => '#808080',
+                'category' => 'Natural',
+                'is_premium' => false,
+                'description' => 'Distinguished gray'
+            ],
+            [
+                'id' => 'platinum',
+                'name' => 'Platinum',
+                'hex' => '#e5e4e2',
+                'category' => 'Natural',
+                'is_premium' => false,
+                'description' => 'Ultra-light platinum'
+            ],
+
+            // ========== MODERN COLORS (PREMIUM) ==========
+            [
+                'id' => 'ash-blonde',
+                'name' => 'Ash Blonde',
+                'hex' => '#c4a484',
+                'category' => 'Modern',
+                'is_premium' => true,
+                'description' => 'Cool-toned ash blonde'
+            ],
+            [
+                'id' => 'honey-blonde',
                 'name' => 'Honey Blonde',
-                'hex' => '#DAA520',
-                'is_premium' => false,
+                'hex' => '#daa520',
+                'category' => 'Modern',
+                'is_premium' => true,
                 'description' => 'Warm honey blonde'
             ],
             [
-                'id' => 'auburn_red',
-                'name' => 'Auburn Red',
-                'hex' => '#A52A2A',
-                'is_premium' => false,
-                'description' => 'Classic auburn red'
+                'id' => 'chestnut',
+                'name' => 'Chestnut',
+                'hex' => '#954535',
+                'category' => 'Modern',
+                'is_premium' => true,
+                'description' => 'Rich chestnut brown'
+            ],
+            [
+                'id' => 'balayage-ombre',
+                'name' => 'Balayage Ombre',
+                'hex' => '#8b7355',
+                'category' => 'Modern',
+                'is_premium' => true,
+                'description' => 'Gradient balayage effect'
             ],
 
-            // Premium colors (require subscription or premium tokens)
+            // ========== CREATIVE COLORS (PREMIUM) ==========
             [
-                'id' => 'platinum_blonde',
-                'name' => 'Platinum Blonde',
-                'hex' => '#E5E4E2',
+                'id' => 'pastel-pink',
+                'name' => 'Pastel Pink',
+                'hex' => '#ffc0cb',
+                'category' => 'Creative',
                 'is_premium' => true,
-                'description' => 'Ultra-light platinum blonde'
+                'description' => 'Soft pastel pink'
             ],
             [
-                'id' => 'rose_gold',
-                'name' => 'Rose Gold',
-                'hex' => '#B76E79',
+                'id' => 'pastel-blue',
+                'name' => 'Pastel Blue',
+                'hex' => '#add8e6',
+                'category' => 'Creative',
                 'is_premium' => true,
-                'description' => 'Trendy rose gold shade'
+                'description' => 'Dreamy pastel blue'
             ],
             [
-                'id' => 'silver_grey',
-                'name' => 'Silver Grey',
-                'hex' => '#C0C0C0',
+                'id' => 'teal',
+                'name' => 'Teal',
+                'hex' => '#008080',
+                'category' => 'Creative',
                 'is_premium' => true,
-                'description' => 'Modern silver grey'
+                'description' => 'Vibrant teal blue-green'
             ],
             [
-                'id' => 'electric_blue',
-                'name' => 'Electric Blue',
-                'hex' => '#0080FF',
+                'id' => 'lavender',
+                'name' => 'Lavender',
+                'hex' => '#e6e6fa',
+                'category' => 'Creative',
                 'is_premium' => true,
-                'description' => 'Vibrant electric blue'
+                'description' => 'Soft lavender purple'
             ],
             [
-                'id' => 'violet_purple',
-                'name' => 'Violet Purple',
-                'hex' => '#8A2BE2',
+                'id' => 'neon-green',
+                'name' => 'Neon Green',
+                'hex' => '#39ff14',
+                'category' => 'Creative',
                 'is_premium' => true,
-                'description' => 'Rich violet purple'
+                'description' => 'Electric neon green'
             ],
             [
-                'id' => 'emerald_green',
-                'name' => 'Emerald Green',
-                'hex' => '#50C878',
+                'id' => 'rainbow',
+                'name' => 'Rainbow',
+                'hex' => '#ff6b6b', // Representative color
+                'category' => 'Creative',
                 'is_premium' => true,
-                'description' => 'Bold emerald green'
-            ],
-            [
-                'id' => 'sunset_orange',
-                'name' => 'Sunset Orange',
-                'hex' => '#FF8C00',
-                'is_premium' => true,
-                'description' => 'Vibrant sunset orange'
-            ],
-            [
-                'id' => 'cotton_candy',
-                'name' => 'Cotton Candy Pink',
-                'hex' => '#FFB6C1',
-                'is_premium' => true,
-                'description' => 'Soft cotton candy pink'
+                'description' => 'Multi-color rainbow effect'
             ]
         ];
 
-        // Filter colors based on premium status
-        $availableColors = array_filter($colors, function ($color) use ($userIsPremium) {
-            return !$color['is_premium'] || $userIsPremium;
+        // Filter by premium status
+        $filteredColors = array_filter($colors, function($color) use ($isPremium) {
+            return !$color['is_premium'] || $isPremium;
         });
+
+        // Filter by category if specified
+        if ($category) {
+            $filteredColors = array_filter($filteredColors, function($color) use ($category) {
+                return $color['category'] === $category;
+            });
+        }
 
         return response()->json([
             'success' => true,
-            'colors' => array_values($availableColors),
+            'colors' => array_values($filteredColors),
+            'categories' => ['Natural', 'Modern', 'Creative'],
             'total_colors' => count($colors),
-            'available_colors' => count($availableColors),
-            'premium_colors_locked' => !$userIsPremium ? count($colors) - count($availableColors) : 0
+            'available_colors' => count($filteredColors),
+            'free_colors' => count(array_filter($colors, fn($c) => !$c['is_premium'])),
+            'premium_colors' => count(array_filter($colors, fn($c) => $c['is_premium'])),
+            'premium_required' => !$isPremium
         ]);
     }
 
     /**
-     * Get subscription plans
+     * Get subscription plans for freemium model
      */
-    public function getSubscriptionPlans()
+    public function getSubscriptionPlans(): JsonResponse
     {
         $plans = [
             [
-                'id' => 'basic',
-                'name' => 'Basic Plan',
-                'price' => 999, // $9.99
-                'price_id' => 'price_basic_monthly',
-                'monthly_tokens' => 50,
+                'id' => 'free',
+                'name' => 'Free',
+                'price' => 0,
+                'currency' => 'USD',
                 'features' => [
-                    '50 transformations per month',
-                    'Access to all basic styles',
-                    'Standard processing speed',
-                    'Email support'
+                    '50 tokens (10 transformations)',
+                    '7 free styles (Fade variants, Crew Cut, Pompadour, Undercut, Bald)',
+                    '8 natural colors only',
+                    'Standard processing'
                 ],
-                'popular' => false
+                'styles_count' => 7,
+                'colors_count' => 8,
+                'tokens_included' => 50
             ],
             [
                 'id' => 'premium',
-                'name' => 'Premium Plan',
-                'price' => 1999, // $19.99
-                'price_id' => 'price_premium_monthly',
-                'monthly_tokens' => 200,
+                'name' => 'Premium',
+                'price' => 999, // $9.99 in cents
+                'currency' => 'USD',
                 'features' => [
-                    '200 transformations per month',
-                    'Access to ALL premium styles',
-                    'Exclusive color palette',
+                    'Unlimited transformations',
+                    'All 19 premium styles',
+                    'All 17 colors (Natural + Modern + Creative)',
                     'Priority processing',
-                    'Premium support'
+                    'Exclusive styles and colors',
+                    'One-time payment'
                 ],
-                'popular' => true
-            ],
-            [
-                'id' => 'pro',
-                'name' => 'Pro Plan',
-                'price' => 4999, // $49.99
-                'price_id' => 'price_pro_monthly',
-                'monthly_tokens' => 500,
-                'features' => [
-                    '500 transformations per month',
-                    'Access to ALL premium styles',
-                    'Exclusive color palette',
-                    'Priority processing',
-                    'API access',
-                    'Dedicated support',
-                    'Custom style requests'
-                ],
-                'popular' => false
+                'styles_count' => 19,
+                'colors_count' => 17,
+                'tokens_included' => 'unlimited'
             ]
         ];
 
@@ -273,41 +527,68 @@ class StyleController extends Controller
     }
 
     /**
-     * Get token packages for one-time purchases
+     * Get style by ID with full details
      */
-    public function getTokenPackages()
+    public function getStyleById(Request $request, string $styleId): JsonResponse
     {
-        $packages = [
-            [
-                'id' => 'small',
-                'name' => 'Starter Pack',
-                'tokens' => 25,
-                'price' => 499, // $4.99
-                'price_per_token' => 0.20,
-                'description' => 'Perfect for trying premium features'
-            ],
-            [
-                'id' => 'medium',
-                'name' => 'Popular Pack',
-                'tokens' => 60,
-                'price' => 999, // $9.99
-                'price_per_token' => 0.17,
-                'description' => 'Great value for regular users',
-                'popular' => true
-            ],
-            [
-                'id' => 'large',
-                'name' => 'Power Pack',
-                'tokens' => 150,
-                'price' => 1999, // $19.99
-                'price_per_token' => 0.13,
-                'description' => 'Best value for heavy users'
-            ]
-        ];
-
+        $isPremium = $request->boolean('is_premium', false);
+        
+        // Get all styles and find the requested one
+        $allStyles = $this->getStyles($request)->getData()->styles;
+        $style = collect($allStyles)->firstWhere('id', $styleId);
+        
+        if (!$style) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Style not found'
+            ], 404);
+        }
+        
+        // Check if user has access
+        if (!$style->is_free && !$isPremium) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Premium subscription required',
+                'requires_premium' => true
+            ], 403);
+        }
+        
         return response()->json([
             'success' => true,
-            'packages' => $packages
+            'style' => $style
+        ]);
+    }
+
+    /**
+     * Get color by ID with full details
+     */
+    public function getColorById(Request $request, string $colorId): JsonResponse
+    {
+        $isPremium = $request->boolean('is_premium', false);
+        
+        // Get all colors and find the requested one
+        $allColors = $this->getColors($request)->getData()->colors;
+        $color = collect($allColors)->firstWhere('id', $colorId);
+        
+        if (!$color) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Color not found'
+            ], 404);
+        }
+        
+        // Check if user has access
+        if ($color->is_premium && !$isPremium) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Premium subscription required',
+                'requires_premium' => true
+            ], 403);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'color' => $color
         ]);
     }
 }

@@ -79,7 +79,8 @@ Route::prefix('payments')->group(function () {
 // Style and content routes (public for embedded widget)
 Route::prefix('styles')->group(function () {
     Route::get('/hairstyles', [App\Http\Controllers\StyleController::class, 'getStyles']);
+    Route::get('/hairstyles/{styleId}', [App\Http\Controllers\StyleController::class, 'getStyleById']);
     Route::get('/colors', [App\Http\Controllers\StyleController::class, 'getColors']);
+    Route::get('/colors/{colorId}', [App\Http\Controllers\StyleController::class, 'getColorById']);
     Route::get('/subscription-plans', [App\Http\Controllers\StyleController::class, 'getSubscriptionPlans']);
-    Route::get('/token-packages', [App\Http\Controllers\StyleController::class, 'getTokenPackages']);
 });
