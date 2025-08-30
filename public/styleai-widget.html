@@ -190,7 +190,7 @@
                             console.log('✅ Auto-login with full profile:', authData.profile);
                             
                             if (urlParams.get('auto_login') === 'true') {
-                                // Show beautiful welcome banner instead of alert
+                                // Show beautiful welcome banner for first-time users only
                                 setTimeout(() => {
                                     showWelcome(authData.user, authData.profile, true);
                                 }, 500);
@@ -206,9 +206,7 @@
                             fetchUserProfile(authData.access_token);
                         }
                         
-                        if (urlParams.get('auth') === 'confirmed' && !urlParams.get('auto_login')) {
-                            alert('Welcome back! Your email has been confirmed and you can now generate hairstyles.');
-                        }
+                        // No banner for returning users - just silent auth restoration
                     } catch (error) {
                         console.error('Error parsing stored auth:', error);
                         localStorage.removeItem('supabase_auth');
@@ -465,24 +463,8 @@
                     return;
                 }
                 
-                // Validation: Check if color is selected
-                if (!colorChoice || 
-                    (colorChoice.type === 'single-tone' && !colorChoice.singleTone) ||
-                    (colorChoice.type === 'accented' && (!colorChoice.accented || !colorChoice.accented.baseColorId))) {
-                    // Show a more subtle notification instead of alert
-                    const notification = document.createElement('div');
-                    notification.className = 'fixed top-4 right-4 bg-orange-100 border border-orange-300 text-orange-700 px-4 py-3 rounded-lg shadow-lg z-50';
-                    notification.innerHTML = '🎨 Please select a color first!';
-                    document.body.appendChild(notification);
-                    
-                    // Auto-remove after 3 seconds
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.parentNode.removeChild(notification);
-                        }
-                    }, 3000);
-                    return;
-                }
+                // Color is optional - users can generate with just hairstyle
+                // No validation needed for color selection
                 
                 // Check if user has enough tokens (for non-premium users, skip in test mode)
                 if (user && userProfile && !userProfile.is_premium && !isTestMode) {
@@ -710,12 +692,8 @@
                         setShowAuthModal(false);
                         console.log('✅ Login successful:', result);
                         
-                        // Show welcome banner for returning users
-                        setTimeout(() => {
-                            showWelcome(result.user, result.profile, false);
-                        }, 300);
-                        
-                        // Don't auto-proceed to generation - let user choose
+                        // No welcome banner for regular login - just silent success
+                        // Users can immediately start using the app
                     } else {
                         alert('Login failed: ' + result.message);
                     }
@@ -1958,9 +1936,6 @@
                             </div>
 
                             {selectedStyle && (
-                                (colorChoice.type === 'single-tone' && colorChoice.singleTone) || 
-                                (colorChoice.type === 'accented' && colorChoice.accented && colorChoice.accented.baseColorId)
-                            ) && (
                                 <button
                                     onClick={checkAuthAndProceed}
                                     disabled={isGenerating}
