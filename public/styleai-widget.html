@@ -1281,10 +1281,10 @@
                                 <div className="flex items-center space-x-2">
                                     <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
                                     <div className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                                        Premium
+                                        {userProfile?.generations_remaining || userProfile?.tokens_remaining || 0} tokens
                                     </div>
                                 </div>
-                                <div className="text-xs text-gray-500">Unlimited access</div>
+                                <div className="text-xs text-gray-500">{userProfile?.current_package || 'Premium'} package</div>
                             </div>
                         ) : null}
                     </div>
