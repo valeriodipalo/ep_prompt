@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Confirmed - StyleAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full mx-4">
+        <div class="text-center">
+            <div class="mb-4">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">Email Confirmed!</h1>
+                <p class="text-gray-600 mb-6">Your account has been verified successfully.</p>
+            </div>
+            
+            <div id="auth-status" class="mb-6 p-4 bg-blue-50 rounded-lg">
+                <p class="text-sm text-blue-700">Processing your authentication...</p>
+            </div>
+
+            <button 
+                onclick="goToWidget()" 
+                class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all"
+            >
+                Continue to StyleAI Widget
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Extract tokens from URL hash
+        function getTokensFromUrl() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            
+            return {
+                access_token: params.get('access_token'),
+                refresh_token: params.get('refresh_token'),
+                expires_at: params.get('expires_at'),
+                token_type: params.get('token_type')
+            };
+        }
+
+        // Store tokens and redirect to widget
+        function goToWidget() {
+            const tokens = getTokensFromUrl();
+            
+            if (tokens.access_token) {
+                // Store tokens in localStorage for the widget to use
+                localStorage.setItem('supabase_auth', JSON.stringify({
+                    access_token: tokens.access_token,
+                    refresh_token: tokens.refresh_token,
+                    expires_at: tokens.expires_at,
+                    confirmed_at: new Date().toISOString()
+                }));
+                
+                // Redirect to widget
+                window.location.href = '/styleai-widget.html?auth=confirmed';
+            } else {
+                // No tokens found, just redirect
+                window.location.href = '/styleai-widget.html';
+            }
+        }
+
+        // Auto-process on page load
+        window.onload = function() {
+            const tokens = getTokensFromUrl();
+            const statusDiv = document.getElementById('auth-status');
+            
+            if (tokens.access_token) {
+                statusDiv.innerHTML = `
+                    <div class="text-sm text-green-700">
+                        <p class="font-semibold">✅ Authentication successful!</p>
+                        <p>You can now use all widget features.</p>
+                    </div>
+                `;
+                
+                // Auto-redirect after 2 seconds
+                setTimeout(() => {
+                    goToWidget();
+                }, 2000);
+            } else {
+                statusDiv.innerHTML = `
+                    <div class="text-sm text-orange-700">
+                        <p>⚠️ No authentication tokens found.</p>
+                        <p>You may need to try logging in again.</p>
+                    </div>
+                `;
+            }
+        };
+    </script>
+</body>
+</html>

@@ -84,6 +84,16 @@ Route::prefix('payments')->group(function () {
     Route::post('/create-checkout-session', [App\Http\Controllers\StripePaymentController::class, 'createCheckoutSession']);
     Route::get('/status', [App\Http\Controllers\StripePaymentController::class, 'checkPaymentStatus']);
     Route::post('/webhook', [App\Http\Controllers\StripePaymentController::class, 'handleWebhook']);
+    
+    // Test endpoint to verify webhook configuration
+    Route::get('/webhook-test', function() {
+        return response()->json([
+            'webhook_url' => url('/api/payments/webhook'),
+            'stripe_configured' => !empty(env('STRIPE_SECRET')),
+            'webhook_secret_configured' => !empty(env('STRIPE_WEBHOOK_SECRET')),
+            'timestamp' => now()->toISOString()
+        ]);
+    });
 });
 
 // Style and content routes (public for embedded widget)

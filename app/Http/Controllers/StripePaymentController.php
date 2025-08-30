@@ -101,13 +101,32 @@ class StripePaymentController extends Controller
                 return response()->json(['error' => 'Webhook not configured'], 400);
             }
 
-            // Verify webhook signature
-            $computedSignature = hash_hmac('sha256', $payload, $webhookSecret);
-            $expectedSignature = explode(',', $signature)[1] ?? '';
-            $expectedSignature = explode('=', $expectedSignature)[1] ?? '';
+            // Verify webhook signature (Stripe format)
+            $elements = explode(',', $signature);
+            $signatureData = [];
+            
+            foreach ($elements as $element) {
+                $parts = explode('=', $element, 2);
+                if (count($parts) === 2) {
+                    $signatureData[$parts[0]] = $parts[1];
+                }
+            }
+            
+            if (!isset($signatureData['v1'])) {
+                Log::error('No v1 signature found');
+                return response()->json(['error' => 'Invalid signature format'], 400);
+            }
+            
+            $timestamp = $signatureData['t'] ?? '';
+            $expectedSignature = $signatureData['v1'];
+            $signedPayload = $timestamp . '.' . $payload;
+            $computedSignature = hash_hmac('sha256', $signedPayload, $webhookSecret);
 
             if (!hash_equals($computedSignature, $expectedSignature)) {
-                Log::error('Invalid webhook signature');
+                Log::error('Invalid webhook signature', [
+                    'expected' => $expectedSignature,
+                    'computed' => $computedSignature
+                ]);
                 return response()->json(['error' => 'Invalid signature'], 400);
             }
 

@@ -1,0 +1,2213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>StyleAI Professional - Salon Edition</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .styleai-widget {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        /* Custom slider styles */
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+                    appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
+            border: 2px solid white;
+        }
+        
+        .slider::-moz-range-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
+        }
+        
+        .slider::-webkit-slider-track {
+            height: 8px;
+            border-radius: 4px;
+        }
+        
+        .slider::-moz-range-track {
+            height: 8px;
+            border-radius: 4px;
+            background: #e5e7eb;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-gray-50 to-purple-50 min-h-screen py-8">
+    <div id="styleai-widget"></div>
+
+    <script type="text/babel">
+        // Mock icons for the widget
+        const Upload = ({ className, ...props }) => (
+            <svg className={className} {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17,8 12,3 7,8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+        );
+
+        const Image = ({ className, ...props }) => (
+            <svg className={className} {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21,15 16,10 5,21"/>
+            </svg>
+        );
+
+        const Sparkles = ({ className, ...props }) => (
+            <svg className={className} {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+            </svg>
+        );
+
+        const Download = ({ className, ...props }) => (
+            <svg className={className} {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7,10 12,15 17,10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+        );
+
+        const ArrowLeft = ({ className, ...props }) => (
+            <svg className={className} {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12,19 5,12 12,5"/>
+            </svg>
+        );
+
+        const Loader = ({ className, ...props }) => (
+            <svg className={className} {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12a9 9 0 11-6.219-8.56"/>
+            </svg>
+        );
+
+        const X = ({ className, ...props }) => (
+            <svg className={className} {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18"/>
+                <path d="M6 6L18 18"/>
+            </svg>
+        );
+
+        // Main StyleAI Widget Component
+        const StyleAIWidget = () => {
+            const [step, setStep] = React.useState(1);
+            const [uploadedImage, setUploadedImage] = React.useState(null);
+            const [selectedGender, setSelectedGender] = React.useState('');
+            const [selectedStyle, setSelectedStyle] = React.useState(null);
+            const [selectedColor, setSelectedColor] = React.useState(null);
+            const [isGenerating, setIsGenerating] = React.useState(false);
+            const [transformedImage, setTransformedImage] = React.useState(null);
+            const [currentLoadingMessage, setCurrentLoadingMessage] = React.useState(0);
+            const [showLoadingScreen, setShowLoadingScreen] = React.useState(false);
+            const [sliderPosition, setSliderPosition] = React.useState(50);
+            
+            // Authentication states
+            const [showAuthModal, setShowAuthModal] = React.useState(false);
+            const [authMode, setAuthMode] = React.useState('login'); // 'login' or 'register'
+            const [user, setUser] = React.useState(null);
+            const [userProfile, setUserProfile] = React.useState(null);
+            const [isAuthenticating, setIsAuthenticating] = React.useState(false);
+            const [showPaymentModal, setShowPaymentModal] = React.useState(false);
+            const [isProcessingPayment, setIsProcessingPayment] = React.useState(false);
+            const [isTestMode, setIsTestMode] = React.useState(false);
+
+            // Witty loading messages
+            const loadingMessages = [
+                "Downloading extra fabulousness… ✨",
+                "Running at maximum glam-frequency ⚡️",
+                "Our servers are styling with precision combs 🖥️💇",
+                "AI is practicing its best hair-flip animations 🤖💃",
+                "Rendering… because great hair can't be rushed ✨",
+                "Calculating the perfect hair-to-face ratio 📐💫",
+                "Teaching AI the difference between layers and bangs 🎓",
+                "Consulting with digital hair stylists worldwide 🌍💇‍♀️",
+                "Applying virtual hair spray for lasting results 💨✨",
+                "Loading 10,000 hair tutorials into memory 📚🧠",
+                "Optimizing follicle algorithms for maximum style 🔬💁‍♀️",
+                "Channeling the spirit of legendary hairstylists 👻✂️"
+            ];
+
+            // Check for stored authentication on load
+            React.useEffect(() => {
+                const storedAuth = localStorage.getItem('supabase_auth');
+                const urlParams = new URLSearchParams(window.location.search);
+                
+                if (storedAuth) {
+                    try {
+                        const authData = JSON.parse(storedAuth);
+                        console.log('✅ Found stored authentication:', authData);
+                        
+                        // Set user as authenticated
+                        setUser({
+                            id: 'authenticated-user', // We'll get real user data from the token
+                            email: 'confirmed-user'
+                        });
+                        
+                        if (urlParams.get('auth') === 'confirmed') {
+                            alert('Welcome back! Your email has been confirmed and you can now generate hairstyles.');
+                        }
+                    } catch (error) {
+                        console.error('Error parsing stored auth:', error);
+                        localStorage.removeItem('supabase_auth');
+                    }
+                }
+            }, []);
+
+            // Rotate loading messages every 2 seconds
+            React.useEffect(() => {
+                let interval;
+                if (isGenerating) {
+                    interval = setInterval(() => {
+                        setCurrentLoadingMessage(prev => (prev + 1) % loadingMessages.length);
+                    }, 2000);
+                }
+                return () => {
+                    if (interval) clearInterval(interval);
+                };
+            }, [isGenerating, loadingMessages.length]);
+
+            // Reset loading message when starting generation
+            React.useEffect(() => {
+                if (isGenerating) {
+                    setCurrentLoadingMessage(0);
+                }
+            }, [isGenerating]);
+
+            // Hairstyle options (matching controller expectations)
+            // Dynamic styles and colors loaded from API
+            const [hairstyles, setHairstyles] = React.useState([]);
+            const [hairColors, setHairColors] = React.useState([]);
+            const [styleCategories, setStyleCategories] = React.useState([]);
+            const [selectedStyleCategory, setSelectedStyleCategory] = React.useState('all');
+            const [loadingStyles, setLoadingStyles] = React.useState(false);
+            
+            // Professional Color Style System
+            const [colorChoice, setColorChoice] = React.useState({
+                type: 'single-tone',
+                singleTone: { colorId: 'medium-brown' }
+            });
+            const [showAdvancedColor, setShowAdvancedColor] = React.useState(false);
+            
+            // Professional Hair Color Palette
+            const professionalColorPalette = [
+                // NO COLOR CHANGE OPTION
+                { id: 'no-change', name: 'No Color Change', hex: '#f3f4f6', family: 'natural', isPremium: false, isNoChange: true, description: 'Keep original hair color' },
+                
+                // FREE NATURAL COLORS
+                { id: 'jet-black', name: 'Jet Black', hex: '#0A0A0A', family: 'black', isPremium: false, description: 'Deep, rich black' },
+                { id: 'dark-brown', name: 'Dark Brown', hex: '#2F1B14', family: 'brunette', isPremium: false, description: 'Rich, deep brown' },
+                { id: 'medium-brown', name: 'Medium Brown', hex: '#5D4037', family: 'brunette', isPremium: false, description: 'Versatile medium brown' },
+                { id: 'light-brown', name: 'Light Brown', hex: '#8D6E63', family: 'brunette', isPremium: false, description: 'Soft, light brown' },
+                { id: 'golden-blonde', name: 'Golden Blonde', hex: '#DAA520', family: 'blonde', isPremium: false, description: 'Classic golden blonde' },
+                { id: 'auburn', name: 'Auburn', hex: '#A52A2A', family: 'red', isPremium: false, description: 'Classic auburn red' },
+                { id: 'salt-pepper', name: 'Salt & Pepper', hex: '#808080', family: 'gray', isPremium: false, description: 'Natural gray blend' },
+                { id: 'platinum', name: 'Platinum', hex: '#E5E4E2', family: 'platinum', isPremium: false, description: 'Ultra-light platinum' },
+                
+                // PREMIUM COLORS
+                { id: 'honey-blonde', name: 'Honey Blonde', hex: '#D4A574', family: 'blonde', isPremium: true, description: 'Warm honey-toned blonde' },
+                { id: 'ash-blonde', name: 'Ash Blonde', hex: '#C4A484', family: 'blonde', isPremium: true, description: 'Cool-toned ash blonde' },
+                { id: 'chestnut', name: 'Chestnut', hex: '#954535', family: 'brunette', isPremium: true, description: 'Warm reddish-brown' },
+                { id: 'copper', name: 'Copper', hex: '#B87333', family: 'red', isPremium: true, description: 'Bright copper red' },
+                { id: 'rose-gold', name: 'Rose Gold', hex: '#E8B4B8', family: 'fashion', isPremium: true, description: 'Trendy rose gold' },
+                { id: 'silver-gray', name: 'Silver Gray', hex: '#C0C0C0', family: 'gray', isPremium: true, description: 'Elegant silver gray' },
+                { id: 'pastel-pink', name: 'Pastel Pink', hex: '#FFB6C1', family: 'pastel', isPremium: true, description: 'Soft pastel pink' },
+                { id: 'lavender', name: 'Lavender', hex: '#E6E6FA', family: 'pastel', isPremium: true, description: 'Soft lavender purple' },
+                { id: 'electric-blue', name: 'Electric Blue', hex: '#7DF9FF', family: 'vibrant', isPremium: true, description: 'Bold electric blue' },
+                { id: 'neon-green', name: 'Neon Green', hex: '#39FF14', family: 'vibrant', isPremium: true, description: 'Bright neon green' },
+                { id: 'hot-pink', name: 'Hot Pink', hex: '#FF69B4', family: 'vibrant', isPremium: true, description: 'Vibrant hot pink' },
+                { id: 'royal-purple', name: 'Royal Purple', hex: '#7851A9', family: 'vibrant', isPremium: true, description: 'Rich royal purple' }
+            ];
+            
+            // Color presets for quick selection
+            const colorPresets = [
+                { id: 'classic-brunette', label: 'Classic Brunette', choice: { type: 'single-tone', singleTone: { colorId: 'medium-brown' } } },
+                { id: 'golden-goddess', label: 'Golden Goddess', choice: { type: 'single-tone', singleTone: { colorId: 'golden-blonde' } } },
+                { id: 'midnight-black', label: 'Midnight Black', choice: { type: 'single-tone', singleTone: { colorId: 'jet-black' } } },
+                { id: 'honey-balayage', label: 'Honey Balayage', choice: { type: 'accented', accented: { baseColorId: 'medium-brown', accentColorId: 'honey-blonde', technique: 'balayage', intensity: 'standard', placement: 'face-framing', blend: 'soft' } } },
+                { id: 'platinum-highlights', label: 'Platinum Highlights', choice: { type: 'accented', accented: { baseColorId: 'dark-brown', accentColorId: 'platinum', technique: 'highlights', intensity: 'bold', placement: 'overall', blend: 'defined' } } },
+                { id: 'rose-ombre', label: 'Rose Ombré', choice: { type: 'accented', accented: { baseColorId: 'dark-brown', accentColorId: 'rose-gold', technique: 'ombre', intensity: 'bold', placement: 'tips', blend: 'defined' } } }
+            ];
+            
+            // Color utility functions
+            const getContrast = (baseHex, accentHex) => {
+                const getLum = (hex) => {
+                    const rgb = parseInt(hex.slice(1), 16);
+                    const r = ((rgb >> 16) & 0xff) / 255;
+                    const g = ((rgb >> 8) & 0xff) / 255;
+                    const b = ((rgb >> 0) & 0xff) / 255;
+                    const sRGB = [r, g, b].map(c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+                    return 0.2126 * sRGB[0] + 0.7152 * sRGB[1] + 0.0722 * sRGB[2];
+                };
+                
+                const lum1 = getLum(baseHex);
+                const lum2 = getLum(accentHex);
+                const brightest = Math.max(lum1, lum2);
+                const darkest = Math.min(lum1, lum2);
+                return (brightest + 0.05) / (darkest + 0.05);
+            };
+            
+            const suggestAccents = (baseId) => {
+                const baseColor = professionalColorPalette.find(c => c.id === baseId);
+                if (!baseColor) return [];
+                
+                return professionalColorPalette
+                    .filter(c => c.id !== baseId && getContrast(baseColor.hex, c.hex) >= 2)
+                    .slice(0, 6);
+            };
+            
+            // Helper function to get selected color name
+            const getSelectedColorName = () => {
+                try {
+                    if (colorChoice && colorChoice.type === 'single-tone' && colorChoice.singleTone) {
+                        const color = professionalColorPalette.find(c => c.id === colorChoice.singleTone.colorId);
+                        return color ? color.name : 'Medium Brown';
+                    } else if (colorChoice && colorChoice.type === 'accented' && colorChoice.accented) {
+                        const baseColor = professionalColorPalette.find(c => c.id === colorChoice.accented.baseColorId);
+                        const accentColor = professionalColorPalette.find(c => c.id === colorChoice.accented.accentColorId);
+                        if (baseColor && accentColor) {
+                            return `${baseColor.name} with ${colorChoice.accented.technique || 'highlights'} in ${accentColor.name}`;
+                        }
+                        return baseColor ? baseColor.name : 'Medium Brown';
+                    }
+                    return 'Medium Brown'; // fallback
+                } catch (error) {
+                    console.error('Error getting selected color name:', error);
+                    return 'Medium Brown'; // safe fallback
+                }
+            };
+            
+            const toColorPrompt = (choice) => {
+                if (choice.type === 'single-tone' && choice.singleTone) {
+                    const color = professionalColorPalette.find(c => c.id === choice.singleTone.colorId);
+                    return color ? `Professional salon single-process hair color: ${color.name.toLowerCase()}, ${color.description}` : 'natural hair color';
+                }
+                
+                if (choice.type === 'accented' && choice.accented) {
+                    const baseColor = professionalColorPalette.find(c => c.id === choice.accented.baseColorId);
+                    const accentColor = professionalColorPalette.find(c => c.id === choice.accented.accentColorId);
+                    
+                    if (baseColor && accentColor) {
+                        return `Professional salon hair coloring: ${baseColor.name.toLowerCase()} base with ${accentColor.name.toLowerCase()} ${choice.accented.technique}, applied with ${choice.accented.intensity} intensity, ${choice.accented.placement} placement, ${choice.accented.blend} blend`;
+                    }
+                }
+                
+                return 'natural hair color';
+            };
+
+            const filteredStyles = React.useMemo(() => {
+                let filtered = hairstyles;
+                
+                // Filter by category if selected
+                if (selectedStyleCategory !== 'all') {
+                    filtered = filtered.filter(style => style.category === selectedStyleCategory);
+                }
+                
+                return filtered;
+            }, [hairstyles, selectedStyleCategory]);
+
+            const handleImageUpload = async (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    console.log('✅ File selected:', file.name, file.size, 'bytes');
+                    
+                    // Create preview and base64 data immediately (no external upload needed!)
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        setUploadedImage({
+                            file,
+                            preview: e.target.result,
+                            base64: e.target.result, // Store base64 for direct fal.ai upload
+                            uploading: false, // No upload needed - we have everything!
+                            uploaded: true,   // Ready to use immediately
+                            method: 'Base64 Direct (No Storage Needed) 🚀'
+                        });
+                        console.log('🎉 Image ready for direct transformation (no upload required)');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const handleGenerate = async () => {
+                // Validation: Check if style is selected
+                if (!selectedStyle) {
+                    alert('❌ Please select a hairstyle first!');
+                    return;
+                }
+                
+                // Validation: Check if color is selected
+                if (!colorChoice || 
+                    (colorChoice.type === 'single-tone' && !colorChoice.singleTone) ||
+                    (colorChoice.type === 'accented' && (!colorChoice.accented || !colorChoice.accented.baseColorId))) {
+                    alert('❌ Please select a color first!');
+                    return;
+                }
+                
+                // Check if user has enough tokens (for non-premium users, skip in test mode)
+                if (user && userProfile && !userProfile.is_premium && !isTestMode) {
+                    const tokensUsed = userProfile.free_transformations_used || 0;
+                    const tokensRemaining = Math.max(0, 50 - tokensUsed);
+                    
+                    if (tokensRemaining < 5) {
+                        alert('❌ Not enough tokens! You need 5 tokens to generate a hairstyle. Upgrade to Premium for unlimited access.');
+                        return;
+                    }
+                }
+                
+                setIsGenerating(true);
+                setShowLoadingScreen(true); // Show loading overlay
+                
+                // Immediately show results page with placeholder
+                setTransformedImage({
+                    url: '', // Will be filled when loading completes
+                    originalUrl: uploadedImage?.preview || 'https://storage.googleapis.com/falserverless/example_inputs/nano-banana-edit-input.png',
+                    description: '',
+                    style: selectedStyle?.name || 'Unknown Style',
+                    color: getSelectedColorName(),
+                    method: 'Loading...'
+                });
+                setStep(4); // Go to results page immediately
+                
+                try {
+                                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
+                    
+                    console.log('Starting image transformation...');
+                                    console.log('🎨 Style options:', {
+                    gender: selectedGender,
+                    hairstyle: selectedStyle.name.toLowerCase(),
+                    color: getSelectedColorName().toLowerCase(),
+                    colorChoice: colorChoice
+                });
+                    
+                    // SMART ROUTING: Try base64 direct method first, then fallback
+                    console.log('🔍 DEBUG: uploadedImage state:', {
+                        hasFile: !!uploadedImage?.file,
+                        hasUrl: !!uploadedImage?.url,
+                        fileName: uploadedImage?.file?.name,
+                        uploading: uploadedImage?.uploading,
+                        uploaded: uploadedImage?.uploaded
+                    });
+                    
+                    // SOLUTION 1: DIRECT BASE64 METHOD (SIMPLEST - NO STORAGE NEEDED!)
+                    console.log('🚀 USING DIRECT BASE64 METHOD (No storage required!)');
+                    console.log('🎯 Endpoint: /api/fal/direct-base64-transform');
+                    
+                    let transformResponse;
+                    
+                    if (uploadedImage?.base64) {
+                        // Use uploaded image via base64
+                        console.log('📷 Using uploaded image (base64 direct)');
+                        transformResponse = await fetch(`${API_BASE_URL}/api/fal/direct-base64-transform`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                base64_image: uploadedImage.base64,
+                                gender: selectedGender,
+                                hairstyle: selectedStyle?.name?.toLowerCase() || 'unknown',
+                                color: getSelectedColorName().toLowerCase()
+                            })
+                        });
+                    } else {
+                        // Fallback to robust method for test images
+                        console.log('🧪 No uploaded image - using robust fallback');
+                        const formData = new FormData();
+                        formData.append('gender', selectedGender);
+                        formData.append('hairstyle', selectedStyle?.name?.toLowerCase() || 'unknown');
+                        formData.append('color', getSelectedColorName().toLowerCase());
+                        
+                        transformResponse = await fetch(`${API_BASE_URL}/api/fal/robust-transform`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                    }
+                        
+                    console.log('Transform response status:', transformResponse.status);
+                    
+                    if (!transformResponse.ok) {
+                        const errorData = await transformResponse.json();
+                        throw new Error(`Transformation failed: ${errorData.error || 'Unknown error'}`);
+                    }
+                    
+                    const result = await transformResponse.json();
+                    console.log('🎉 Transformation result:', result);
+                    
+                    if (result.success) {
+                        // Update the existing transformedImage with real results
+                        setTransformedImage(prev => ({
+                            ...prev,
+                            url: result.result_url,
+                            description: result.description,
+                            method: result.method || 'Bulletproof Transform 🛡️'
+                        }));
+                        
+                        // Deduct 5 tokens for successful generation (only for non-premium users, skip in test mode)
+                        if (user && userProfile && !userProfile.is_premium && !isTestMode) {
+                            setUserProfile(prev => ({
+                                ...prev,
+                                free_transformations_used: (prev.free_transformations_used || 0) + 5
+                            }));
+                            console.log('🎯 5 tokens deducted for transformation');
+                        } else if (isTestMode) {
+                            console.log('🧪 Test Mode: Skipping token deduction');
+                        }
+                        
+                        setIsGenerating(false); // FIX: Stop loading spinner
+                        setShowLoadingScreen(false); // Hide loading overlay
+                        return;
+                    } else {
+                        throw new Error(result.error || 'Robust transformation failed');
+                    }
+
+                } catch (error) {
+                    console.error('Transformation error:', error);
+                    
+                    // Fallback to mock transformation (no blocking alert)
+                    setTimeout(() => {
+                        setTransformedImage(prev => ({
+                            ...prev,
+                            url: 'https://via.placeholder.com/400x400/6366f1/ffffff?text=✨+Demo+Mode',
+                            description: 'Demo transformation (API not available)',
+                            method: 'Demo Mode (Error Fallback) 🧪'
+                        }));
+                        setIsGenerating(false); // CRITICAL: Stop loading
+                        setShowLoadingScreen(false); // Hide loading overlay
+                    }, 1000);
+                    return;
+                }
+
+                setIsGenerating(false);
+            };
+
+            // Helper function to poll for async results
+            const pollForResult = async (requestId, maxAttempts = 30, interval = 2000) => {
+                const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
+                
+                for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                    try {
+                        const statusResponse = await fetch(`${API_BASE_URL}/api/fal/check-status?request_id=${requestId}`);
+                        if (!statusResponse.ok) {
+                            throw new Error('Failed to check status');
+                        }
+
+                        const status = await statusResponse.json();
+
+                        if (status.status === 'COMPLETED') {
+                            const resultResponse = await fetch(`${API_BASE_URL}/api/fal/get-result?request_id=${requestId}`);
+                            if (!resultResponse.ok) {
+                                throw new Error('Failed to get result');
+                            }
+
+                            const result = await resultResponse.json();
+                            
+                            if (result.images?.length > 0) {
+                                return {
+                                    image_url: result.images[0].url,
+                                    description: result.description
+                                };
+                            }
+                        }
+
+                        if (status.status === 'FAILED') {
+                            throw new Error('Transformation failed');
+                        }
+
+                        // Wait before next attempt
+                        if (attempt < maxAttempts - 1) {
+                            await new Promise(resolve => setTimeout(resolve, interval));
+                        }
+
+                    } catch (error) {
+                        if (attempt === maxAttempts - 1) {
+                            throw error;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, interval));
+                    }
+                }
+
+                throw new Error('Transformation timed out');
+            };
+
+            const handleReset = () => {
+                setStep(1);
+                setUploadedImage(null);
+                setSelectedGender('');
+                setSelectedStyle(null);
+                setSelectedColor(null);
+                setTransformedImage(null);
+                setIsGenerating(false);
+                setShowLoadingScreen(false);
+                setSliderPosition(50); // Reset slider to middle
+            };
+
+            // Authentication functions
+            const handleLogin = async (email, password) => {
+                setIsAuthenticating(true);
+                try {
+                                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
+                    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    const result = await response.json();
+                    console.log('Login response:', result);
+                    
+                    if (result.success) {
+                        setUser(result.user);
+                        setUserProfile(result.profile);
+                        setShowAuthModal(false);
+                        console.log('✅ Login successful:', result);
+                        
+                        // Proceed to generation
+                        handleGenerate();
+                    } else {
+                        alert('Login failed: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    alert('Login failed: ' + error.message);
+                } finally {
+                    setIsAuthenticating(false);
+                }
+            };
+
+            const handleRegister = async (email, password, name) => {
+                setIsAuthenticating(true);
+                try {
+                                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
+                    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email, password, name })
+                    });
+
+                    const result = await response.json();
+                    console.log('Register response:', result);
+                    
+                    if (result.success) {
+                        if (result.requires_confirmation) {
+                            alert('Registration successful! Please check your email and click the verification link, then try logging in.');
+                            setAuthMode('login'); // Switch to login mode
+                        } else {
+                            setUser(result.user);
+                            setUserProfile(result.profile);
+                            setShowAuthModal(false);
+                            console.log('✅ Registration successful:', result);
+                            alert('Welcome! You have 10 free transformations to get started.');
+                            
+                            // Proceed to generation
+                            handleGenerate();
+                        }
+                    } else {
+                        alert('Registration failed: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    alert('Registration failed: ' + error.message);
+                } finally {
+                    setIsAuthenticating(false);
+                }
+            };
+
+            const checkAuthAndProceed = () => {
+                if (user || isTestMode) {
+                    // User is authenticated OR in test mode, proceed
+                    handleGenerate();
+                } else {
+                    // Show authentication modal (only in production mode)
+                    setShowAuthModal(true);
+                }
+            };
+
+            const testConnection = async () => {
+                try {
+                                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
+                    console.log('Testing connection to:', `${API_BASE_URL}/api/fal/test`);
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/fal/test`);
+                    const result = await response.json();
+                    
+                    console.log('Connection test result:', result);
+                    alert(`Connection test: ${result.message}`);
+                } catch (error) {
+                    console.error('Connection test failed:', error);
+                    alert(`Connection test failed: ${error.message}`);
+                }
+            };
+
+            const testSupabase = async () => {
+                try {
+                                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
+                    console.log('Testing Supabase configuration...');
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/auth/test-supabase`);
+                    const result = await response.json();
+                    
+                    console.log('Supabase test result:', result);
+                    alert(`Supabase Config: ${JSON.stringify(result, null, 2)}`);
+                } catch (error) {
+                    console.error('Supabase test failed:', error);
+                    alert(`Supabase test failed: ${error.message}`);
+                }
+            };
+
+            // Load styles and colors from API
+            const loadStylesAndColors = async () => {
+                setLoadingStyles(true);
+                try {
+                                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
+                    const isPremium = userProfile?.is_premium || false;
+                    
+                    // Load styles
+                    const stylesResponse = await fetch(`${API_BASE_URL}/api/styles/hairstyles?is_premium=${isPremium}`);
+                    const stylesData = await stylesResponse.json();
+                    
+                    if (stylesData.success) {
+                        setHairstyles(stylesData.styles);
+                        setStyleCategories(stylesData.categories || []);
+                        console.log('✅ Loaded styles:', stylesData.styles.length, 'styles');
+                    }
+                    
+                    // Load colors
+                    const colorsResponse = await fetch(`${API_BASE_URL}/api/styles/colors?is_premium=${isPremium}`);
+                    const colorsData = await colorsResponse.json();
+                    
+                    if (colorsData.success) {
+                        setHairColors(colorsData.colors);
+                        console.log('✅ Loaded colors:', colorsData.colors.length, 'colors');
+                    }
+                    
+                } catch (error) {
+                    console.error('Failed to load styles/colors:', error);
+                    // Fallback to basic options
+                    setHairstyles([
+                        { id: 'fade_low', name: 'Low Fade', category: 'Short', is_free: true, preview: '💇‍♂️' },
+                        { id: 'crew_cut', name: 'Crew Cut', category: 'Professional', is_free: true, preview: '✂️' },
+                    ]);
+                    setHairColors([
+                        { id: 'black', name: 'Black', hex: '#1a1a1a', is_premium: false },
+                        { id: 'dark-brown', name: 'Dark Brown', hex: '#3c2415', is_premium: false },
+                    ]);
+                } finally {
+                    setLoadingStyles(false);
+                }
+            };
+
+            // Load styles when component mounts or user premium status changes
+            React.useEffect(() => {
+                loadStylesAndColors();
+            }, [userProfile?.is_premium]);
+
+            // Payment processing function
+            const handlePremiumUpgrade = async () => {
+                if (!user) {
+                    alert('Please log in first to upgrade to Premium');
+                    setShowPaymentModal(false);
+                    setShowAuthModal(true);
+                    return;
+                }
+
+                setIsProcessingPayment(true);
+                
+                try {
+                                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
+                    
+                    // Create Stripe checkout session
+                    const response = await fetch(`${API_BASE_URL}/api/payments/create-checkout-session`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            user_id: user.id,
+                            user_email: user.email || userProfile?.email,
+                            success_url: `${window.location.origin}${window.location.pathname}?payment=success`,
+                            cancel_url: `${window.location.origin}${window.location.pathname}?payment=cancelled`
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (response.ok && result.checkout_url) {
+                        // Redirect to Stripe Checkout
+                        window.location.href = result.checkout_url;
+                    } else {
+                        throw new Error(result.error || 'Failed to create checkout session');
+                    }
+                    
+                } catch (error) {
+                    console.error('Payment error:', error);
+                    alert(`Payment failed: ${error.message}`);
+                } finally {
+                    setIsProcessingPayment(false);
+                }
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto">
+                    <div className="styleai-widget bg-white rounded-2xl shadow-2xl p-8 relative">
+                    {/* Top Left - Professional User Button */}
+                    <div className="absolute top-6 left-6">
+                        {user ? (
+                            <div className="relative group">
+                                <button className="flex items-center space-x-3 bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 hover:shadow-xl transition-all duration-200">
+                                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                        </svg>
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="text-sm font-semibold text-gray-800">
+                                            {userProfile?.name || 'User'}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                            {userProfile?.is_premium ? '💎 Premium' : '🆓 Free Plan'}
+                                        </div>
+                                    </div>
+                                </button>
+                                
+                                {/* Professional User Menu */}
+                                <div className="absolute left-0 top-16 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                    <div className="space-y-4">
+                                        <div className="border-b border-gray-100 pb-3">
+                                            <div className="text-sm font-semibold text-gray-800">
+                                                {userProfile?.name || user.email || 'User'}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                {userProfile?.email || user.email}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs text-gray-600">Account Type</span>
+                                                <span className={`text-xs font-medium ${userProfile?.is_premium ? 'text-purple-600' : 'text-blue-600'}`}>
+                                                    {userProfile?.is_premium ? '💎 Premium' : '🆓 Free'}
+                                                </span>
+                                            </div>
+                                            
+                                            {!userProfile?.is_premium && (
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-xs text-gray-600">Tokens</span>
+                                                    <span className="text-xs font-medium text-blue-600">
+                                                        {Math.max(0, 50 - (userProfile?.free_transformations_used || 0))}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="border-t border-gray-100 pt-3 space-y-2">
+                                            {!userProfile?.is_premium && (
+                                                <button
+                                                    onClick={() => setShowPaymentModal(true)}
+                                                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-3 rounded-lg text-xs font-medium hover:from-purple-600 hover:to-pink-600 transition-colors"
+                                                >
+                                                    Upgrade to Premium
+                                                </button>
+                                            )}
+                                            
+                                            <button
+                                                onClick={() => setIsTestMode(!isTestMode)}
+                                                className="w-full bg-gray-100 text-gray-600 py-2 px-3 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors"
+                                            >
+                                                🧪 {isTestMode ? 'Exit' : 'Enter'} Developer Mode
+                                            </button>
+                                            
+                                            <button
+                                                onClick={() => {
+                                                    setUser(null);
+                                                    setUserProfile(null);
+                                                    localStorage.removeItem('supabase_auth');
+                                                    alert('Logged out successfully');
+                                                }}
+                                                className="w-full text-red-500 py-2 px-3 rounded-lg text-xs font-medium hover:bg-red-50 transition-colors"
+                                            >
+                                                Sign Out
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <button 
+                                onClick={() => setShowAuthModal(true)}
+                                className="flex items-center space-x-3 bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 hover:shadow-xl hover:border-purple-300 transition-all duration-200"
+                            >
+                                <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-500 rounded-lg flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                    </svg>
+                                </div>
+                                <div className="text-left">
+                                    <div className="text-sm font-semibold text-gray-800">Sign In</div>
+                                    <div className="text-xs text-gray-500">Get started</div>
+                                </div>
+                            </button>
+                        )}
+                    </div>
+                    
+                    {/* Top Right - Professional Token Counter */}
+                    <div className="absolute top-6 right-6">
+                        {user && userProfile && !userProfile.is_premium ? (
+                            <div className="relative group">
+                                <div className="bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 hover:shadow-xl transition-all duration-200">
+                                    <div className="flex items-center space-x-2">
+                                        <div className={`w-2 h-2 rounded-full ${
+                                            Math.max(0, 50 - (userProfile?.free_transformations_used || 0)) < 10 
+                                                ? 'bg-red-500 animate-pulse' 
+                                                : 'bg-green-500'
+                                        }`}></div>
+                                        <div className="text-sm font-semibold text-gray-800">
+                                            {Math.max(0, 50 - (userProfile?.free_transformations_used || 0))} tokens
+                                        </div>
+                                    </div>
+                                    <div className="text-xs text-gray-500">5 per generation</div>
+                                </div>
+                                
+                                {/* Professional Token Tooltip */}
+                                <div className="absolute right-0 top-16 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                    <div className="space-y-3">
+                                        <div className="text-center">
+                                            <div className="text-lg font-bold text-gray-800">Token Balance</div>
+                                            <div className="text-2xl font-bold text-purple-600">
+                                                {Math.max(0, 50 - (userProfile?.free_transformations_used || 0))}
+                                            </div>
+                                            <div className="text-xs text-gray-500">tokens remaining</div>
+                                        </div>
+                                        
+                                        <div className="bg-gray-50 rounded-lg p-3">
+                                            <div className="text-xs text-gray-600 space-y-1">
+                                                <div>• Each generation costs 5 tokens</div>
+                                                <div>• {Math.floor(Math.max(0, 50 - (userProfile?.free_transformations_used || 0)) / 5)} generations left</div>
+                                            </div>
+                                        </div>
+                                        
+                                        {Math.max(0, 50 - (userProfile?.free_transformations_used || 0)) < 10 && (
+                                            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                                <div className="text-xs text-red-600 font-medium">⚠️ Running Low!</div>
+                                                <div className="text-xs text-red-500">Consider upgrading to Premium for unlimited access.</div>
+                                            </div>
+                                        )}
+                                        
+                                        <button
+                                            onClick={() => setShowPaymentModal(true)}
+                                            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-3 rounded-lg text-xs font-medium hover:from-purple-600 hover:to-pink-600 transition-colors"
+                                        >
+                                            Upgrade to Premium
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : user && userProfile?.is_premium ? (
+                            <div className="bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3">
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+                                    <div className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                        Premium
+                                    </div>
+                                </div>
+                                <div className="text-xs text-gray-500">Unlimited access</div>
+                            </div>
+                        ) : null}
+                    </div>
+                    
+                    {/* Header */}
+                    <div className="text-center mb-6">
+                        <div className="flex items-center justify-center space-x-2 mb-2">
+                            <Sparkles className="h-6 w-6 text-purple-600" />
+                            <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                StyleAI
+                            </h2>
+                        </div>
+                        <p className="text-xl text-gray-600 mb-6">Professional Hair Transformation for Salons</p>
+                        
+                        {/* Test Mode Access - Professional Toggle */}
+                        <div className="flex justify-center">
+                            <button
+                                onClick={() => setIsTestMode(!isTestMode)}
+                                className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
+                                    isTestMode 
+                                        ? 'bg-yellow-100 text-yellow-700 border border-yellow-300 hover:bg-yellow-200'
+                                        : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
+                                }`}
+                            >
+                                {isTestMode ? '🧪 Exit Developer Mode' : '🧪 Developer Mode'}
+                            </button>
+                        </div>
+                        
+                        {/* Developer Test Panel */}
+                        {isTestMode && (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mt-6 max-w-2xl mx-auto">
+                                <div className="text-center mb-4">
+                                    <div className="text-lg font-semibold text-yellow-800 mb-2">🧪 Developer Test Mode</div>
+                                    <div className="text-sm text-yellow-700">Test API connections and simulate user states</div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <button
+                                        onClick={testConnection}
+                                        className="px-4 py-3 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
+                                    >
+                                        🔌 Test API
+                                    </button>
+                                    <button
+                                        onClick={testSupabase}
+                                        className="px-4 py-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
+                                    >
+                                        🗄️ Test Database
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            const token = prompt('Paste your access token from email confirmation:');
+                                            if (token) {
+                                                localStorage.setItem('supabase_auth', JSON.stringify({
+                                                    access_token: token,
+                                                    confirmed_at: new Date().toISOString()
+                                                }));
+                                                setUser({ id: 'manual-auth', email: 'confirmed' });
+                                                setUserProfile({
+                                                    name: 'Test User',
+                                                    email: 'test@example.com',
+                                                    is_premium: false,
+                                                    free_transformations_used: 45
+                                                });
+                                                alert('✅ Test authentication set!');
+                                            }
+                                        }}
+                                        className="px-4 py-3 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors"
+                                    >
+                                        🔑 Mock Auth
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setUser({ id: 'premium-test', email: 'premium@test.com' });
+                                            setUserProfile({
+                                                name: 'Premium User',
+                                                email: 'premium@test.com',
+                                                is_premium: true,
+                                                free_transformations_used: 0
+                                            });
+                                            alert('✅ Premium account activated!');
+                                        }}
+                                        className="px-4 py-3 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors"
+                                    >
+                                        💎 Mock Premium
+                                    </button>
+                                </div>
+                                
+                                <div className="mt-4 text-center">
+                                    <div className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                                        ✅ Authentication Bypassed - Generate Without Login
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Progress Steps */}
+                    <div className="flex justify-center mb-6">
+                        <div className="flex items-center space-x-2">
+                            {[1, 2, 3, 4].map((num) => (
+                                <React.Fragment key={num}>
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                                        step >= num ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500'
+                                    }`}>
+                                        {num}
+                                    </div>
+                                    {num < 4 && <div className={`h-1 w-8 ${step > num ? 'bg-purple-600' : 'bg-gray-200'}`}></div>}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Step 1: Upload */}
+                    {step === 1 && (
+                        <div className="text-center">
+                            <h3 className="text-lg font-semibold mb-4">Upload Your Photo</h3>
+                            
+                            {!uploadedImage ? (
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 hover:border-purple-400 transition-colors">
+                                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-600 mb-4">Choose a clear, front-facing photo</p>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                        className="hidden"
+                                        id="photo-upload"
+                                    />
+                                    <label
+                                        htmlFor="photo-upload"
+                                        className="bg-purple-600 text-white px-6 py-2 rounded-lg cursor-pointer hover:bg-purple-700 transition-colors"
+                                    >
+                                        Select Photo
+                                    </label>
+                                </div>
+                            ) : (
+                                <div>
+                                    {/* Image Preview */}
+                                    <div className="mb-4">
+                                        <div className="inline-block max-w-full">
+                                            <img
+                                                src={uploadedImage.preview}
+                                                alt="Uploaded"
+                                                className="max-w-full max-h-80 w-auto h-auto object-contain rounded-lg shadow-md border"
+                                                style={{
+                                                    maxWidth: '100%',
+                                                    height: 'auto',
+                                                    display: 'block'
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="text-xs text-gray-500 mt-2">
+                                            <p>{uploadedImage.file?.name} ({Math.round((uploadedImage.file?.size || 0) / 1024)} KB)</p>
+                                            {uploadedImage.uploading && (
+                                                <p className="text-blue-600 mt-1">⏳ Uploading to storage...</p>
+                                            )}
+                                            {uploadedImage.uploaded && (
+                                                <p className="text-green-600 mt-1">✅ Ready for transformation</p>
+                                            )}
+                                            {uploadedImage.uploadError && (
+                                                <p className="text-red-600 mt-1">❌ Upload failed: {uploadedImage.uploadError}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Action Buttons */}
+                                    <div className="flex gap-3 justify-center">
+                                        <button
+                                            onClick={() => setUploadedImage(null)}
+                                            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                        >
+                                            Change Photo
+                                        </button>
+                                        <button
+                                            onClick={() => setStep(2)}
+                                            disabled={uploadedImage.uploading}
+                                            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {uploadedImage.uploading ? 'Uploading...' : 'Continue'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Step 2: Gender & Style Selection */}
+                    {step === 2 && (
+                        <div>
+                            <div className="flex items-center mb-4">
+                                <button onClick={() => setStep(1)} className="mr-3">
+                                    <ArrowLeft className="h-5 w-5 text-gray-500" />
+                                </button>
+                                <h3 className="text-lg font-semibold">Choose Style</h3>
+                            </div>
+
+                            {/* Preview uploaded image */}
+                            {uploadedImage && (
+                                <div className="mb-4">
+                                    <div className="inline-block max-w-full">
+                                        <img
+                                            src={uploadedImage.preview}
+                                            alt="Uploaded"
+                                            className="max-w-full max-h-32 w-auto h-auto object-contain rounded-lg mx-auto shadow-sm border"
+                                            style={{
+                                                maxWidth: '100%',
+                                                height: 'auto',
+                                                display: 'block'
+                                            }}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1 text-center">
+                                        {uploadedImage.file?.name} ({Math.round((uploadedImage.file?.size || 0) / 1024)} KB)
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Gender Selection */}
+                            <div className="mb-4">
+                                <p className="text-sm font-medium mb-2">Gender:</p>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setSelectedGender('female')}
+                                        className={`flex-1 py-2 px-4 rounded-lg border ${
+                                            selectedGender === 'female' 
+                                                ? 'border-purple-500 bg-purple-50 text-purple-700' 
+                                                : 'border-gray-300'
+                                        }`}
+                                    >
+                                        👩 Female
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedGender('male')}
+                                        className={`flex-1 py-2 px-4 rounded-lg border ${
+                                            selectedGender === 'male' 
+                                                ? 'border-purple-500 bg-purple-50 text-purple-700' 
+                                                : 'border-gray-300'
+                                        }`}
+                                    >
+                                        👨 Male
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Category Filter */}
+                            {selectedGender && styleCategories.length > 0 && (
+                                <div className="mb-4">
+                                    <p className="text-sm font-medium mb-2">Category:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        <button
+                                            onClick={() => setSelectedStyleCategory('all')}
+                                            className={`px-3 py-1 rounded-full text-xs transition-colors ${
+                                                selectedStyleCategory === 'all'
+                                                    ? 'bg-purple-500 text-white'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            All
+                                        </button>
+                                        {styleCategories.map((category) => (
+                                            <button
+                                                key={category}
+                                                onClick={() => setSelectedStyleCategory(category)}
+                                                className={`px-3 py-1 rounded-full text-xs transition-colors ${
+                                                    selectedStyleCategory === category
+                                                        ? 'bg-purple-500 text-white'
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                {category.replace('_', ' ')}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Style Selection */}
+                            {selectedGender && (
+                                <div className="mb-4">
+                                    <p className="text-sm font-medium mb-2">
+                                        Hairstyle: 
+                                        {loadingStyles && <span className="text-xs text-gray-500 ml-2">Loading...</span>}
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                                        {filteredStyles.map((style) => (
+                                            <button
+                                                key={style.id}
+                                                onClick={() => {
+                                                    if (!style.is_free && !userProfile?.is_premium) {
+                                                        setShowPaymentModal(true);
+                                                        return;
+                                                    }
+                                                    setSelectedStyle(style);
+                                                    setStep(3);
+                                                }}
+                                                className={`p-3 rounded-lg border text-left hover:border-purple-400 transition-colors relative ${
+                                                    selectedStyle?.id === style.id 
+                                                        ? 'border-purple-500 bg-purple-50' 
+                                                        : 'border-gray-300'
+                                                }`}
+                                            >
+                                                {/* Premium Badge */}
+                                                {!style.is_free && (
+                                                    <div className="absolute top-1 right-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                                                        💎
+                                                    </div>
+                                                )}
+                                                
+                                                <div className="text-lg mb-1">
+                                                    {style.preview || (style.category === 'Short' ? '✂️' : 
+                                                                      style.category === 'Long' ? '🦁' : 
+                                                                      style.category === 'Professional' ? '💼' : 
+                                                                      style.category === 'Trendy' ? '⚡' : 
+                                                                      style.category === 'Cultural_Identity' ? '🌍' :
+                                                                      style.category === 'No_Hair' ? '🟫' : '💇‍♂️')}
+                                                </div>
+                                                <div className="text-xs text-gray-600 font-medium">{style.name}</div>
+                                                <div className="text-xs text-gray-500 mt-1">{style.category}</div>
+                                                
+                                                {/* Lock overlay for premium styles */}
+                                                {!style.is_free && !userProfile?.is_premium && (
+                                                    <div className="absolute inset-0 bg-black bg-opacity-20 rounded-lg flex items-center justify-center">
+                                                        <div className="text-white text-lg">🔒</div>
+                                                    </div>
+                                                )}
+                                            </button>
+                                        ))}
+                                        
+                                        {/* Show message if no styles available */}
+                                        {filteredStyles.length === 0 && !loadingStyles && (
+                                            <div className="col-span-2 text-center text-gray-500 py-8">
+                                                No styles available in this category
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Premium upsell */}
+                                    {!userProfile?.is_premium && hairstyles.some(s => !s.is_free) && (
+                                        <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                                            <div className="text-center">
+                                                <p className="text-sm text-purple-800 mb-2">
+                                                    🔓 Unlock {hairstyles.filter(s => !s.is_free).length} premium styles
+                                                </p>
+                                                <button
+                                                    onClick={() => setShowPaymentModal(true)}
+                                                    className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full hover:from-purple-600 hover:to-pink-600 transition-colors"
+                                                >
+                                                    Upgrade to Premium - $9.99
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Step 3: Professional Color Selection */}
+                    {step === 3 && (
+                        <div>
+                            <div className="flex items-center mb-4">
+                                <button onClick={() => setStep(2)} className="mr-3">
+                                    <ArrowLeft className="h-5 w-5 text-gray-500" />
+                                </button>
+                                <h3 className="text-lg font-semibold">Professional Color</h3>
+                            </div>
+
+                            <div className="mb-4">
+                                <p className="text-sm text-gray-600 mb-6">Selected Style: <span className="font-medium">{selectedStyle?.name}</span></p>
+                                
+                                {/* Popular Presets - Premium Design (Before Color Selection) */}
+                                <div className="mb-8">
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Popular Presets</h3>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        {[
+                                            { id: 'honey-balayage', label: 'Honey Balayage', description: 'Brown base with blonde highlights', choice: { type: 'accented', accented: { baseColorId: 'medium-brown', accentColorId: 'golden-blonde', technique: 'balayage', intensity: 'standard', placement: 'face-framing', blend: 'soft' } } },
+                                            { id: 'classic-brunette', label: 'Classic Brunette', description: 'Timeless medium brown', choice: { type: 'single-tone', singleTone: { colorId: 'medium-brown' } } },
+                                            { id: 'golden-goddess', label: 'Golden Goddess', description: 'Professional salon look', choice: { type: 'single-tone', singleTone: { colorId: 'golden-blonde' } } }
+                                        ].map((preset) => {
+                                            const isSelected = JSON.stringify(colorChoice) === JSON.stringify(preset.choice);
+                                            // Honey Balayage is free (not locked)
+                                            const isLocked = false; // All presets are accessible to show app potential
+                                            
+                                            return (
+                                                <button
+                                                    key={preset.id}
+                                                    onClick={() => {
+                                                        setColorChoice(preset.choice);
+                                                    }}
+                                                    className={`p-4 rounded-lg border-2 text-left transition-all duration-200 ${
+                                                        isSelected
+                                                            ? 'border-purple-500 bg-purple-50 shadow-lg'
+                                                            : 'border-gray-200 hover:border-purple-300 hover:shadow-md'
+                                                    }`}
+                                                >
+                                                    <div className="text-sm font-semibold text-gray-800 mb-1">{preset.label}</div>
+                                                    <div className="text-xs text-gray-600">
+                                                        {preset.description}
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                
+                                {/* Color Type Tabs */}
+                                <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
+                                    <button
+                                        onClick={() => setColorChoice({ type: 'single-tone', singleTone: { colorId: 'medium-brown' } })}
+                                        className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                                            colorChoice.type === 'single-tone'
+                                                ? 'bg-white text-purple-600 shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-800'
+                                        }`}
+                                    >
+                                        Single-Tone
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setColorChoice({ 
+                                                type: 'accented', 
+                                                accented: { 
+                                                    baseColorId: 'medium-brown', 
+                                                    accentColorId: 'golden-blonde', 
+                                                    technique: 'balayage', 
+                                                    intensity: 'standard', 
+                                                    placement: 'face-framing', 
+                                                    blend: 'soft' 
+                                                } 
+                                            });
+                                        }}
+                                        className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                                            colorChoice.type === 'accented'
+                                                ? 'bg-white text-purple-600 shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-800'
+                                        }`}
+                                    >
+                                        Professional Colors
+                                    </button>
+                                </div>
+                                {/* Single-Tone Color Selection */}
+                                {colorChoice.type === 'single-tone' && (
+                                    <div className="grid grid-cols-6 md:grid-cols-8 gap-4">
+                                        {professionalColorPalette.map((color) => (
+                                            <button
+                                                key={color.id}
+                                                onClick={() => {
+                                                    if (color.isPremium && !userProfile?.is_premium) {
+                                                        setShowPaymentModal(true);
+                                                        return;
+                                                    }
+                                                    setColorChoice({ type: 'single-tone', singleTone: { colorId: color.id } });
+                                                }}
+                                            className={`relative w-12 h-12 rounded-lg border-2 transition-all duration-200 ${
+                                                (colorChoice.type === 'single-tone' && colorChoice.singleTone?.colorId === color.id) 
+                                                    ? 'border-purple-500 shadow-lg transform scale-110' 
+                                                    : 'border-gray-300 hover:border-gray-400'
+                                            } ${color.isPremium && !userProfile?.is_premium ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:scale-105'}`}
+                                            title={color.name}
+                                        >
+                                            {color.isNoChange ? (
+                                                <div className="w-full h-full rounded-md bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border border-gray-300">
+                                                    <span className="text-gray-600 text-xs font-bold">NO</span>
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    className="w-full h-full rounded-md"
+                                                    style={{ backgroundColor: color.hex }}
+                                                />
+                                            )}
+                                            
+                                            {/* Selection check mark */}
+                                            {(colorChoice.type === 'single-tone' && colorChoice.singleTone?.colorId === color.id) && (
+                                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
+                                                    <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                            )}
+                                            
+                                            {/* Lock overlay for premium colors */}
+                                            {color.isPremium && !userProfile?.is_premium && (
+                                                <div className="absolute inset-0 bg-black bg-opacity-20 rounded-lg flex items-center justify-center">
+                                                    <div className="text-white text-sm">🔒</div>
+                                                </div>
+                                            )}
+                                        </button>
+                                        ))}
+                                    </div>
+                                )}
+                                
+                                {/* Professional Color Selection - Honey Balayage Parameters */}
+                                {colorChoice.type === 'accented' && (
+                                    <div className="space-y-6">
+                                        {/* Base Color - Allow Medium Brown and Dark Brown */}
+                                        <div>
+                                            <h4 className="text-lg font-semibold text-gray-800 mb-4">Base Color</h4>
+                                            <div className="grid grid-cols-6 md:grid-cols-8 gap-4">
+                                                {professionalColorPalette.filter(c => ['medium-brown', 'dark-brown'].includes(c.id)).map((color) => {
+                                                    const isSelected = colorChoice.accented?.baseColorId === color.id;
+                                                    
+                                                    return (
+                                                        <button
+                                                            key={color.id}
+                                                            onClick={() => setColorChoice(prev => ({
+                                                                ...prev,
+                                                                accented: { ...prev.accented, baseColorId: color.id }
+                                                            }))}
+                                                            className={`relative w-12 h-12 rounded-lg border-2 transition-all duration-200 ${
+                                                                isSelected 
+                                                                    ? 'border-purple-500 shadow-lg transform scale-110' 
+                                                                    : 'border-gray-300 hover:border-gray-400 hover:scale-105'
+                                                            }`}
+                                                            title={color.name}
+                                                        >
+                                                            <div
+                                                                className="w-full h-full rounded-md"
+                                                                style={{ backgroundColor: color.hex }}
+                                                            />
+                                                            
+                                                            {isSelected && (
+                                                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
+                                                                    <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                </div>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        {/* Accent Color - Allow Golden Blonde and lock others */}
+                                        <div>
+                                            <h4 className="text-lg font-semibold text-gray-800 mb-4">Accent Color</h4>
+                                            <div className="grid grid-cols-6 md:grid-cols-8 gap-4">
+                                                {professionalColorPalette.filter(c => ['golden-blonde', 'honey-blonde', 'platinum', 'ash-blonde'].includes(c.id)).map((color) => {
+                                                    const isSelected = colorChoice.accented?.accentColorId === color.id;
+                                                    const isHoneyBalayageColor = color.id === 'golden-blonde';
+                                                    const isLocked = !isHoneyBalayageColor && !userProfile?.is_premium;
+                                                    
+                                                    return (
+                                                        <button
+                                                            key={color.id}
+                                                            onClick={() => {
+                                                                if (isLocked) {
+                                                                    setShowPaymentModal(true);
+                                                                    return;
+                                                                }
+                                                                setColorChoice(prev => ({
+                                                                    ...prev,
+                                                                    accented: { ...prev.accented, accentColorId: color.id }
+                                                                }));
+                                                            }}
+                                                            className={`relative w-12 h-12 rounded-lg border-2 transition-all duration-200 ${
+                                                                isSelected 
+                                                                    ? 'border-purple-500 shadow-lg transform scale-110' 
+                                                                    : 'border-gray-300 hover:border-gray-400'
+                                                            } ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:scale-105'}`}
+                                                            title={color.name}
+                                                        >
+                                                            <div
+                                                                className="w-full h-full rounded-md"
+                                                                style={{ backgroundColor: color.hex }}
+                                                            />
+                                                            
+                                                            {isLocked && (
+                                                                <div className="absolute inset-0 bg-black bg-opacity-40 rounded-md flex items-center justify-center">
+                                                                    <span className="text-white text-lg">🔒</span>
+                                                                </div>
+                                                            )}
+                                                            
+                                                            {isSelected && (
+                                                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
+                                                                    <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                </div>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            
+                                            {/* Contrast Ratio Display */}
+                                            {colorChoice.accented?.baseColorId && colorChoice.accented?.accentColorId && (
+                                                <div className="mt-3 text-xs text-gray-600">
+                                                    {(() => {
+                                                        const baseColor = professionalColorPalette.find(c => c.id === colorChoice.accented.baseColorId);
+                                                        const accentColor = professionalColorPalette.find(c => c.id === colorChoice.accented.accentColorId);
+                                                        if (baseColor && accentColor) {
+                                                            const ratio = getContrast(baseColor.hex, accentColor.hex);
+                                                            return (
+                                                                <div className="flex items-center">
+                                                                    <span>Contrast ratio: {ratio.toFixed(1)}</span>
+                                                                    <span className={`ml-2 ${ratio >= 3 ? 'text-green-600' : 'text-yellow-600'}`}>
+                                                                        {ratio >= 5 ? '✅ Excellent' : ratio >= 3 ? '✅ Good' : '⚠️ Low'}
+                                                                    </span>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Professional Controls */}
+                                        <div className="space-y-6">
+                                            <div>
+                                                <h4 className="text-lg font-semibold text-gray-800 mb-4">Technique</h4>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {['highlights', 'lowlights', 'balayage', 'ombre'].map((technique) => {
+                                                        const isHoneyBalayageTechnique = technique === 'balayage';
+                                                        const isLocked = !isHoneyBalayageTechnique && !userProfile?.is_premium;
+                                                        
+                                                        return (
+                                                            <button
+                                                                key={technique}
+                                                                onClick={() => {
+                                                                    if (isLocked) {
+                                                                        setShowPaymentModal(true);
+                                                                        return;
+                                                                    }
+                                                                    setColorChoice(prev => ({
+                                                                        ...prev,
+                                                                        accented: { ...prev.accented, technique }
+                                                                    }));
+                                                                }}
+                                                                className={`py-3 px-4 text-sm font-medium rounded-lg border-2 transition-all duration-200 relative ${
+                                                                    colorChoice.accented?.technique === technique
+                                                                        ? 'border-purple-500 bg-purple-50 text-purple-700 shadow-lg'
+                                                                        : 'border-gray-300 hover:border-gray-400 hover:scale-105'
+                                                                } ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                {technique.charAt(0).toUpperCase() + technique.slice(1)}
+                                                                {isLocked && (
+                                                                    <div className="absolute inset-0 bg-white bg-opacity-80 rounded-lg flex items-center justify-center">
+                                                                        <span className="text-gray-500 text-sm">🔒</span>
+                                                                    </div>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <h4 className="text-lg font-semibold text-gray-800 mb-4">Intensity</h4>
+                                                <div className="flex bg-gray-100 rounded-lg p-1">
+                                                    {['subtle', 'standard', 'bold'].map((intensity) => {
+                                                        const isHoneyBalayageIntensity = intensity === 'standard';
+                                                        const isLocked = !isHoneyBalayageIntensity && !userProfile?.is_premium;
+                                                        
+                                                        return (
+                                                            <button
+                                                                key={intensity}
+                                                                onClick={() => {
+                                                                    if (isLocked) {
+                                                                        setShowPaymentModal(true);
+                                                                        return;
+                                                                    }
+                                                                    setColorChoice(prev => ({
+                                                                        ...prev,
+                                                                        accented: { ...prev.accented, intensity }
+                                                                    }));
+                                                                }}
+                                                                className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all duration-200 relative ${
+                                                                    colorChoice.accented?.intensity === intensity
+                                                                        ? 'bg-white text-purple-600 shadow-lg'
+                                                                        : 'text-gray-600 hover:text-gray-800'
+                                                                } ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                {intensity.charAt(0).toUpperCase() + intensity.slice(1)}
+                                                                {isLocked && (
+                                                                    <span className="absolute top-1 right-1 text-xs">🔒</span>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <h4 className="text-lg font-semibold text-gray-800 mb-4">Placement</h4>
+                                                <div className="flex bg-gray-100 rounded-lg p-1">
+                                                    {['overall', 'face-framing', 'mid-ends', 'tips'].map((placement) => {
+                                                        const isHoneyBalayagePlacement = placement === 'face-framing';
+                                                        const isLocked = !isHoneyBalayagePlacement && !userProfile?.is_premium;
+                                                        
+                                                        return (
+                                                            <button
+                                                                key={placement}
+                                                                onClick={() => {
+                                                                    if (isLocked) {
+                                                                        setShowPaymentModal(true);
+                                                                        return;
+                                                                    }
+                                                                    setColorChoice(prev => ({
+                                                                        ...prev,
+                                                                        accented: { ...prev.accented, placement }
+                                                                    }));
+                                                                }}
+                                                                className={`flex-1 py-2 px-2 text-xs font-medium rounded-md transition-all duration-200 relative ${
+                                                                    colorChoice.accented?.placement === placement
+                                                                        ? 'bg-white text-purple-600 shadow-lg'
+                                                                        : 'text-gray-600 hover:text-gray-800'
+                                                                } ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                {placement === 'face-framing' ? 'Face Frame' : 
+                                                                 placement === 'mid-ends' ? 'Mid-Ends' : 
+                                                                 placement.charAt(0).toUpperCase() + placement.slice(1)}
+                                                                {isLocked && (
+                                                                    <span className="absolute top-1 right-1 text-xs">🔒</span>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <h4 className="text-lg font-semibold text-gray-800 mb-4">Blend</h4>
+                                                <div className="flex bg-gray-100 rounded-lg p-1">
+                                                    {['soft', 'defined'].map((blend) => {
+                                                        const isHoneyBalayageBlend = blend === 'soft';
+                                                        const isLocked = !isHoneyBalayageBlend && !userProfile?.is_premium;
+                                                        
+                                                        return (
+                                                            <button
+                                                                key={blend}
+                                                                onClick={() => {
+                                                                    if (isLocked) {
+                                                                        setShowPaymentModal(true);
+                                                                        return;
+                                                                    }
+                                                                    setColorChoice(prev => ({
+                                                                        ...prev,
+                                                                        accented: { ...prev.accented, blend }
+                                                                    }));
+                                                                }}
+                                                                className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all duration-200 relative ${
+                                                                    colorChoice.accented?.blend === blend
+                                                                        ? 'bg-white text-purple-600 shadow-lg'
+                                                                        : 'text-gray-600 hover:text-gray-800'
+                                                                } ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                {blend.charAt(0).toUpperCase() + blend.slice(1)}
+                                                                {isLocked && (
+                                                                    <span className="absolute top-1 right-1 text-xs">🔒</span>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Premium color upsell */}
+                                {!userProfile?.is_premium && hairColors.some(c => c.is_premium) && (
+                                    <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                                        <div className="text-center">
+                                            <p className="text-sm text-purple-800 mb-2">
+                                                🎨 Unlock {hairColors.filter(c => c.is_premium).length} premium colors
+                                            </p>
+                                            <button
+                                                onClick={() => setShowPaymentModal(true)}
+                                                className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full hover:from-purple-600 hover:to-pink-600 transition-colors"
+                                            >
+                                                Get Creative Colors - $9.99
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {selectedStyle && (
+                                (colorChoice.type === 'single-tone' && colorChoice.singleTone) || 
+                                (colorChoice.type === 'accented' && colorChoice.accented && colorChoice.accented.baseColorId)
+                            ) && (
+                                <button
+                                    onClick={checkAuthAndProceed}
+                                    disabled={isGenerating}
+                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 min-h-[60px]"
+                                >
+                                    {isGenerating ? (
+                                        <div className="flex flex-col items-center justify-center">
+                                            <div className="flex items-center mb-1">
+                                                <Loader className="h-4 w-4 mr-2 animate-spin" />
+                                                <span className="font-medium">Styling in progress...</span>
+                                            </div>
+                                            <div className="text-xs opacity-90 text-center leading-relaxed transition-all duration-500 ease-in-out">
+                                                {loadingMessages[currentLoadingMessage]}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center">
+                                            <Sparkles className="h-4 w-4 mr-2" />
+                                            Generate Your New Hairstyle
+                                        </div>
+                                    )}
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+
+
+                    {/* Step 4: Results with Interactive Slider */}
+                    {step === 4 && transformedImage && (
+                        <div className="text-center relative">
+                            <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+                                {showLoadingScreen ? 'Creating Your New Look! ✨' : 'Your New Look! ✨'}
+                            </h3>
+                            
+                            {/* Loading Overlay */}
+                            {showLoadingScreen && (
+                                <div className="absolute inset-0 bg-white bg-opacity-95 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center z-10">
+                                    <div className="mb-6">
+                                        <div className="relative">
+                                            <div className="w-24 h-24 mx-auto mb-4 relative">
+                                                <div className="absolute inset-0 border-4 border-purple-200 rounded-full"></div>
+                                                <div className="absolute inset-0 border-4 border-transparent border-t-purple-600 rounded-full animate-spin"></div>
+                                                <div className="absolute inset-2 border-4 border-transparent border-t-pink-600 rounded-full animate-spin" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <Sparkles className="h-8 w-8 text-purple-600 animate-pulse" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <h4 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
+                                            AI Magic in Progress
+                                        </h4>
+                                        
+                                        <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 mb-4 max-w-xs mx-auto">
+                                            <p className="text-base font-medium text-gray-800 transition-all duration-500 ease-in-out">
+                                                {loadingMessages[currentLoadingMessage]}
+                                            </p>
+                                        </div>
+                                        
+                                        <div className="flex justify-center space-x-1 mb-4">
+                                            {loadingMessages.map((_, index) => (
+                                                <div
+                                                    key={index}
+                                                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                                        index === currentLoadingMessage 
+                                                            ? 'bg-purple-600 scale-125' 
+                                                            : 'bg-gray-300'
+                                                    }`}
+                                                />
+                                            ))}
+                                        </div>
+                                        
+                                        <p className="text-sm text-gray-600">
+                                            Your transformation is almost ready...
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Interactive Before/After Slider */}
+                            <div className="relative mb-6">
+                                <div className="relative w-full max-w-sm mx-auto">
+                                    {/* Container for images - Dynamic sizing based on image */}
+                                    <div 
+                                        className="relative overflow-hidden rounded-xl shadow-lg cursor-grab active:cursor-grabbing" 
+                                        style={{aspectRatio: 'auto'}}
+                                        onMouseDown={(e) => {
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            const newPosition = ((e.clientX - rect.left) / rect.width) * 100;
+                                            setSliderPosition(Math.max(0, Math.min(100, newPosition)));
+                                            
+                                            const handleMouseMove = (moveEvent) => {
+                                                const newPos = ((moveEvent.clientX - rect.left) / rect.width) * 100;
+                                                setSliderPosition(Math.max(0, Math.min(100, newPos)));
+                                            };
+                                            
+                                            const handleMouseUp = () => {
+                                                document.removeEventListener('mousemove', handleMouseMove);
+                                                document.removeEventListener('mouseup', handleMouseUp);
+                                                e.currentTarget.style.cursor = 'grab';
+                                            };
+                                            
+                                            document.addEventListener('mousemove', handleMouseMove);
+                                            document.addEventListener('mouseup', handleMouseUp);
+                                            e.currentTarget.style.cursor = 'grabbing';
+                                        }}
+                                        onTouchStart={(e) => {
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            const touch = e.touches[0];
+                                            const newPosition = ((touch.clientX - rect.left) / rect.width) * 100;
+                                            setSliderPosition(Math.max(0, Math.min(100, newPosition)));
+                                            
+                                            const handleTouchMove = (moveEvent) => {
+                                                const moveTouch = moveEvent.touches[0];
+                                                const newPos = ((moveTouch.clientX - rect.left) / rect.width) * 100;
+                                                setSliderPosition(Math.max(0, Math.min(100, newPos)));
+                                            };
+                                            
+                                            const handleTouchEnd = () => {
+                                                document.removeEventListener('touchmove', handleTouchMove);
+                                                document.removeEventListener('touchend', handleTouchEnd);
+                                            };
+                                            
+                                            document.addEventListener('touchmove', handleTouchMove);
+                                            document.addEventListener('touchend', handleTouchEnd);
+                                        }}
+                                    >
+                                        {/* After Image (Background) */}
+                                        {transformedImage.url ? (
+                                            <img
+                                                src={transformedImage.url}
+                                                alt="After"
+                                                className="block w-full h-auto object-contain"
+                                                style={{maxHeight: '400px'}}
+                                            />
+                                        ) : (
+                                            <div className="w-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center" style={{height: '300px'}}>
+                                                <div className="text-center">
+                                                    <Sparkles className="h-12 w-12 text-purple-400 mx-auto mb-2 animate-pulse" />
+                                                    <p className="text-purple-600 font-medium">Your new look loading...</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {/* Before Image (Foreground with clip) - Positioned absolutely to overlay */}
+                                        <div 
+                                            className="absolute top-0 left-0 w-full h-full overflow-hidden"
+                                            style={{clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)`}}
+                                        >
+                                            <img
+                                                src={transformedImage.originalUrl || uploadedImage?.preview || 'https://storage.googleapis.com/falserverless/example_inputs/nano-banana-edit-input.png'}
+                                                alt="Before"
+                                                className="w-full h-full object-contain"
+                                                style={{maxHeight: '400px'}}
+                                            />
+                                        </div>
+                                        
+                                        {/* Slider Line */}
+                                        <div 
+                                            className="absolute top-0 bottom-0 w-1 bg-white shadow-lg pointer-events-none"
+                                            style={{left: `${sliderPosition}%`, transform: 'translateX(-50%)'}}
+                                        >
+                                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center pointer-events-none">
+                                                <div className="w-1 h-4 bg-gray-400 rounded"></div>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Labels */}
+                                        <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded pointer-events-none">
+                                            Before
+                                        </div>
+                                        <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded pointer-events-none">
+                                            After ✨
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Slider Control */}
+                                    <div className="mt-4">
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            value={sliderPosition}
+                                            onChange={(e) => setSliderPosition(e.target.value)}
+                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                                            style={{
+                                                background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${sliderPosition}%, #e5e7eb ${sliderPosition}%, #e5e7eb 100%)`
+                                            }}
+                                        />
+                                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                            <span>👆 Click or drag to compare</span>
+                                            <span>{Math.round(sliderPosition)}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-gray-50 p-3 rounded-lg mb-4 text-left">
+                                <p className="text-xs text-gray-600">
+                                    <strong>Style:</strong> {transformedImage.style}<br/>
+                                    <strong>Color:</strong> {transformedImage.color}<br/>
+                                    <strong>Method:</strong> {transformedImage.method || (uploadedImage?.url ? 'Supabase Upload' : 'Test Image')}
+                                </p>
+                                {transformedImage.description && (
+                                    <p className="text-xs text-gray-500 mt-2 italic">
+                                        {transformedImage.description}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => {
+                                        const link = document.createElement('a');
+                                        link.href = transformedImage.url;
+                                        link.download = 'styleai-transformation.png';
+                                        link.click();
+                                    }}
+                                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg flex items-center justify-center hover:bg-green-700 transition-colors"
+                                >
+                                    <Download className="h-4 w-4 mr-1" />
+                                    Download
+                                </button>
+                                <button
+                                    onClick={handleReset}
+                                    className="flex-1 border border-purple-600 text-purple-600 py-2 px-4 rounded-lg hover:bg-purple-50 transition-colors"
+                                >
+                                    Try Again
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Loading Overlay */}
+                    {isGenerating && (
+                        <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-xl">
+                            <div className="text-center">
+                                <Loader className="h-8 w-8 text-purple-600 animate-spin mx-auto mb-2" />
+                                <p className="text-sm text-gray-600">Creating your new look...</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Authentication Modal */}
+                    {showAuthModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-xl p-6 w-full max-w-md">
+                                <div className="text-center mb-6">
+                                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                                        Generate Your New Hairstyle
+                                    </h3>
+                                    <p className="text-gray-600 text-sm">
+                                        {authMode === 'login' 
+                                            ? 'Sign in to generate your hairstyle transformation' 
+                                            : 'Create an account and get 10 free transformations!'
+                                        }
+                                    </p>
+                                </div>
+
+                                {authMode === 'login' ? (
+                                    <AuthForm 
+                                        mode="login" 
+                                        onSubmit={handleLogin}
+                                        isLoading={isAuthenticating}
+                                        onSwitchMode={() => setAuthMode('register')}
+                                    />
+                                ) : (
+                                    <AuthForm 
+                                        mode="register" 
+                                        onSubmit={handleRegister}
+                                        isLoading={isAuthenticating}
+                                        onSwitchMode={() => setAuthMode('login')}
+                                    />
+                                )}
+
+                                <button
+                                    onClick={() => setShowAuthModal(false)}
+                                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Payment Modal */}
+                    {showPaymentModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-xl p-6 w-full max-w-md">
+                                <div className="text-center mb-6">
+                                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                                        Upgrade to Premium
+                                    </h3>
+                                    <p className="text-gray-600 text-sm mb-4">
+                                        Unlock unlimited hairstyle transformations and exclusive styles!
+                                    </p>
+                                </div>
+
+                                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 mb-6">
+                                    <div className="text-center">
+                                        <div className="text-3xl font-bold text-purple-600 mb-2">$9.99</div>
+                                        <div className="text-sm text-gray-600 mb-4">One-time payment</div>
+                                        
+                                        <div className="space-y-2 text-left">
+                                            <div className="flex items-center text-sm text-gray-700">
+                                                <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                Unlimited transformations
+                                            </div>
+                                            <div className="flex items-center text-sm text-gray-700">
+                                                <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                Exclusive premium styles
+                                            </div>
+                                            <div className="flex items-center text-sm text-gray-700">
+                                                <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                Premium color options
+                                            </div>
+                                            <div className="flex items-center text-sm text-gray-700">
+                                                <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                Priority processing
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={handlePremiumUpgrade}
+                                    disabled={isProcessingPayment}
+                                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-6 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                                >
+                                    {isProcessingPayment ? (
+                                        <div className="flex items-center justify-center">
+                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                                            Processing...
+                                        </div>
+                                    ) : (
+                                        'Upgrade Now - $9.99'
+                                    )}
+                                </button>
+
+                                <div className="text-center">
+                                    <p className="text-xs text-gray-500 mb-2">
+                                        Secure payment powered by Stripe
+                                    </p>
+                                    <button
+                                        onClick={() => setShowPaymentModal(false)}
+                                        className="text-sm text-gray-500 hover:text-gray-700"
+                                    >
+                                        Maybe later
+                                    </button>
+                                </div>
+
+                                <button
+                                    onClick={() => setShowPaymentModal(false)}
+                                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    </div>
+                </div>
+            );
+        };
+
+        // Authentication Form Component
+        const AuthForm = ({ mode, onSubmit, isLoading, onSwitchMode }) => {
+            const [email, setEmail] = React.useState('');
+            const [password, setPassword] = React.useState('');
+            const [name, setName] = React.useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (mode === 'login') {
+                    onSubmit(email, password);
+                } else {
+                    onSubmit(email, password, name);
+                }
+            };
+
+            return (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {mode === 'register' && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Name
+                            </label>
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                                placeholder="Your name"
+                                required
+                            />
+                        </div>
+                    )}
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Email
+                        </label>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                            placeholder="your@email.com"
+                            required
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Password
+                        </label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                            placeholder="••••••••"
+                            minLength="6"
+                            required
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50"
+                    >
+                        {isLoading ? (
+                            <div className="flex items-center justify-center">
+                                <Loader className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                                {mode === 'login' ? 'Signing in...' : 'Creating account...'}
+                            </div>
+                        ) : (
+                            mode === 'login' ? 'Sign In' : 'Create Account'
+                        )}
+                    </button>
+
+                    <div className="text-center">
+                        <button
+                            type="button"
+                            onClick={onSwitchMode}
+                            className="text-sm text-purple-600 hover:text-purple-700"
+                        >
+                            {mode === 'login' 
+                                ? "Don't have an account? Sign up" 
+                                : "Already have an account? Sign in"
+                            }
+                        </button>
+                    </div>
+                </form>
+            );
+        };
+
+        // Render the widget
+        const root = ReactDOM.createRoot(document.getElementById('styleai-widget'));
+        root.render(<StyleAIWidget />);
+    </script>
+</body>
+</html>
