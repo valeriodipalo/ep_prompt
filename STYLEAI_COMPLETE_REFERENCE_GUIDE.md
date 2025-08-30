@@ -658,6 +658,44 @@ if (mode === 'register') {
 - ✅ **Real-time Validation**: Visual feedback when passwords don't match
 - ✅ **Error Highlighting**: Red border and background for mismatched passwords
 
+#### **Seamless Auto-Login After Email Confirmation**
+```javascript
+// Enhanced auth confirmation flow
+async function goToWidget() {
+  const tokens = getTokensFromUrl();
+  
+  if (tokens.access_token) {
+    // Fetch complete user profile using access token
+    const profileResponse = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+      headers: { 'Authorization': `Bearer ${tokens.access_token}` }
+    });
+    
+    if (profileResponse.ok) {
+      const profileData = await profileResponse.json();
+      
+      // Store complete authentication data
+      localStorage.setItem('supabase_auth', JSON.stringify({
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        expires_at: tokens.expires_at,
+        user: profileData.user,
+        profile: profileData.profile
+      }));
+    }
+    
+    // Redirect with auto-login flag
+    window.location.href = `${baseUrl}/styleai-widget.html?auth=confirmed&auto_login=true`;
+  }
+}
+```
+
+#### **Auto-Login Features:**
+- ✅ **Seamless Experience**: No manual login required after email confirmation
+- ✅ **Profile Pre-fetch**: User data loaded during confirmation process
+- ✅ **Welcome Message**: Personalized greeting for new users
+- ✅ **Token Management**: Secure storage of authentication tokens
+- ✅ **Fallback Handling**: Graceful degradation if profile fetch fails
+
 ### **Supabase Authentication Flow**
 ```javascript
 // Registration
