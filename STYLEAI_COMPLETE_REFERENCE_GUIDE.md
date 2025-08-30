@@ -599,6 +599,27 @@ const shouldLockParameter = isPremiumParameter && !canAccessPremium && !isHoneyB
 
 ## 🔐 **AUTHENTICATION & SECURITY**
 
+### **Supabase Production Configuration**
+
+**Critical:** Supabase Dashboard must be configured with production URLs:
+
+#### **Site URL (Supabase Dashboard):**
+```
+https://laraver-final-ai-headshot-o6n3.vercel.app
+```
+
+#### **Redirect URLs (Supabase Dashboard):**
+```
+https://laraver-final-ai-headshot-o6n3.vercel.app/auth-confirm.html
+https://laraver-final-ai-headshot-o6n3.vercel.app/styleai-widget.html
+https://laraver-final-ai-headshot-o6n3.vercel.app/
+http://localhost:8080/auth-confirm.html
+http://localhost:8080/styleai-widget.html
+http://localhost:8080/
+```
+
+**⚠️ Common Issue:** If email confirmations redirect to localhost, check these URL configurations in Supabase Dashboard → Authentication → URL Configuration.
+
 ### **Supabase Authentication Flow**
 ```javascript
 // Registration
@@ -762,6 +783,29 @@ CREATE TABLE payments (
 ## 🚨 **TROUBLESHOOTING GUIDE**
 
 ### **Common Error Patterns**
+
+#### **Email Confirmation Redirecting to Localhost**
+**Symptoms:**
+- Email confirmation links redirect to `http://localhost:3000/#access_token=...` instead of production URL
+- Users can't complete email verification in production
+- New account registration fails to complete
+
+**Root Cause:** Supabase Dashboard URL configuration still pointing to development URLs
+
+**Fix Steps:**
+1. **Go to [Supabase Dashboard](https://supabase.com/dashboard/project/nxxznqnrxomzudghktrz)**
+2. **Authentication → URL Configuration**
+3. **Set Site URL:** `https://laraver-final-ai-headshot-o6n3.vercel.app`
+4. **Add Redirect URLs:**
+   ```
+   https://laraver-final-ai-headshot-o6n3.vercel.app/auth-confirm.html
+   https://laraver-final-ai-headshot-o6n3.vercel.app/styleai-widget.html
+   https://laraver-final-ai-headshot-o6n3.vercel.app/
+   http://localhost:8080/auth-confirm.html
+   http://localhost:8080/styleai-widget.html
+   http://localhost:8080/
+   ```
+5. **Save configuration and test with new email**
 
 #### **"Cannot read properties of null"**
 ```javascript
