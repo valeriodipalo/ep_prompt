@@ -219,23 +219,52 @@ class StripePaymentController extends Controller
 
             // Update user profile with package data
             // All packages get premium access to styles/colors, but different generation limits
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $supabaseServiceKey,
-                'Content-Type' => 'application/json',
-                'apikey' => $supabaseServiceKey
-            ])->patch($supabaseUrl . '/rest/v1/user_profiles', [
+            $updateData = [
                 'is_premium' => true, // All paid packages get premium access
                 'current_package' => $package,
                 'generations_remaining' => $generations,
-                'package_purchased_at' => now()->toISOString(),
-                'tokens_remaining' => $this->getTokensForPackage($package)
-            ], [
-                'email' => 'eq.' . $userEmail
-            ]);
+                'tokens_remaining' => $this->getTokensForPackage($package),
+                'package_purchased_at' => now()->toISOString()
+            ];
+
+            // Try to update by user ID first, then by email as fallback
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $supabaseServiceKey,
+                'Content-Type' => 'application/json',
+                'apikey' => $supabaseServiceKey,
+                'Prefer' => 'return=minimal'
+            ])->patch($supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId, $updateData);
+
+            // If user ID update failed, try email
+            if (!$response->successful()) {
+                Log::warning('User ID update failed, trying email', ['user_id' => $userId, 'email' => $userEmail]);
+                
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $supabaseServiceKey,
+                    'Content-Type' => 'application/json',
+                    'apikey' => $supabaseServiceKey,
+                    'Prefer' => 'return=minimal'
+                ])->patch($supabaseUrl . '/rest/v1/user_profiles?email=eq.' . $userEmail, $updateData);
+            }
 
             if (!$response->successful()) {
+                Log::error('Both user profile update attempts failed', [
+                    'user_id' => $userId,
+                    'email' => $userEmail,
+                    'package' => $package,
+                    'response_body' => $response->body(),
+                    'response_status' => $response->status()
+                ]);
                 throw new \Exception('Failed to update user profile: ' . $response->body());
             }
+
+            Log::info('User profile updated successfully', [
+                'user_id' => $userId,
+                'email' => $userEmail,
+                'package' => $package,
+                'generations' => $generations,
+                'tokens' => $this->getTokensForPackage($package)
+            ]);
 
             // Get package info for payment record
             $packages = [

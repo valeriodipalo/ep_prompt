@@ -316,6 +316,27 @@
                 }
             }, []);
 
+            // Manual payment check function
+            const checkPaymentStatus = async () => {
+                try {
+                    await refreshUserProfileAfterPayment();
+                    
+                    // Show notification
+                    const notification = document.createElement('div');
+                    notification.className = 'fixed top-4 right-4 bg-green-100 border border-green-300 text-green-700 px-4 py-3 rounded-lg shadow-lg z-50';
+                    notification.innerHTML = '✅ Account updated! Check your token count.';
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 4000);
+                } catch (error) {
+                    console.error('Error checking payment status:', error);
+                }
+            };
+
             // Refresh user profile after successful payment
             const refreshUserProfileAfterPayment = async () => {
                 try {
@@ -1000,8 +1021,23 @@
                     const result = await response.json();
                     
                     if (response.ok && result.checkout_url) {
-                        // Redirect to Stripe Checkout
-                        window.location.href = result.checkout_url;
+                        // Open Stripe Checkout in new tab to preserve login state
+                        window.open(result.checkout_url, '_blank');
+                        
+                        // Show message to user about new tab
+                        const notification = document.createElement('div');
+                        notification.className = 'fixed top-4 right-4 bg-blue-100 border border-blue-300 text-blue-700 px-4 py-3 rounded-lg shadow-lg z-50';
+                        notification.innerHTML = '💳 Payment page opened in new tab. Complete your purchase there!';
+                        document.body.appendChild(notification);
+                        
+                        setTimeout(() => {
+                            if (notification.parentNode) {
+                                notification.parentNode.removeChild(notification);
+                            }
+                        }, 8000);
+                        
+                        // Close payment modal
+                        setShowPaymentModal(false);
                     } else {
                         throw new Error(result.error || 'Failed to create checkout session');
                     }
@@ -1076,6 +1112,13 @@
                                                     Choose Package
                                                 </button>
                                             )}
+                                            
+                                            <button
+                                                onClick={checkPaymentStatus}
+                                                className="w-full bg-blue-100 text-blue-700 py-2 px-3 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
+                                            >
+                                                💳 Check Payment Status
+                                            </button>
                                             
                                             <button
                                                 onClick={() => setIsTestMode(!isTestMode)}
