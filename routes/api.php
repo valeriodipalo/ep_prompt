@@ -173,7 +173,10 @@ Route::prefix('payments')->group(function () {
         return response()->json([
             'webhook_url' => url('/api/payments/webhook'),
             'stripe_configured' => !empty(env('STRIPE_SECRET')),
+            'stripe_secret_prefix' => env('STRIPE_SECRET') ? substr(env('STRIPE_SECRET'), 0, 7) : 'missing',
             'webhook_secret_configured' => !empty(env('STRIPE_WEBHOOK_SECRET')),
+            'webhook_secret_prefix' => env('STRIPE_WEBHOOK_SECRET') ? substr(env('STRIPE_WEBHOOK_SECRET'), 0, 7) : 'missing',
+            'app_env' => env('APP_ENV'),
             'timestamp' => now()->toISOString()
         ]);
     });

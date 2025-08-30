@@ -25,9 +25,22 @@ class StripePaymentController extends Controller
 
             $stripeSecretKey = env('STRIPE_SECRET');
             
+            // Debug Stripe configuration
+            Log::info('Stripe configuration check', [
+                'stripe_secret_exists' => !empty($stripeSecretKey),
+                'stripe_secret_length' => $stripeSecretKey ? strlen($stripeSecretKey) : 0,
+                'stripe_secret_prefix' => $stripeSecretKey ? substr($stripeSecretKey, 0, 7) : 'none'
+            ]);
+            
             if (!$stripeSecretKey) {
+                Log::error('Stripe secret key missing from environment');
                 return response()->json([
-                    'error' => 'Stripe configuration missing'
+                    'error' => 'Stripe configuration missing',
+                    'debug' => [
+                        'stripe_secret_exists' => false,
+                        'env_check' => env('APP_ENV'),
+                        'available_env_vars' => array_keys($_ENV)
+                    ]
                 ], 500);
             }
 
