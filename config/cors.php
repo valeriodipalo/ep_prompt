@@ -24,6 +24,9 @@ return [
         'https://laraver-final-ai-headshot-o6n3.vercel.app',
         'http://localhost:8080',
         'http://localhost:3000',
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:5175', // In case Vite uses different ports
     ],
 
     'allowed_origins_patterns' => [],
