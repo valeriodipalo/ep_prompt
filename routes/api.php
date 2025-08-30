@@ -85,6 +85,42 @@ Route::prefix('payments')->group(function () {
     Route::get('/status', [App\Http\Controllers\StripePaymentController::class, 'checkPaymentStatus']);
     Route::post('/webhook', [App\Http\Controllers\StripePaymentController::class, 'handleWebhook']);
     
+    // Get pricing packages
+    Route::get('/packages', function() {
+        return response()->json([
+            'success' => true,
+            'packages' => [
+                'starter' => [
+                    'id' => 'starter',
+                    'name' => 'StyleAI Starter',
+                    'price' => 2.49,
+                    'generations' => 3,
+                    'features' => ['Premium Styles', 'Premium Colors'],
+                    'description' => 'Perfect for trying premium features',
+                    'popular' => false
+                ],
+                'creator' => [
+                    'id' => 'creator',
+                    'name' => 'StyleAI Creator',
+                    'price' => 4.49,
+                    'generations' => 10,
+                    'features' => ['Premium Styles', 'Premium Colors'],
+                    'description' => 'Great for regular styling needs',
+                    'popular' => true
+                ],
+                'salon' => [
+                    'id' => 'salon',
+                    'name' => 'StyleAI Salon Package',
+                    'price' => 19.99,
+                    'generations' => 100,
+                    'features' => ['Premium Styles', 'Premium Colors', 'White Labeling', 'Custom Integration Support'],
+                    'description' => 'Professional salon solution',
+                    'popular' => false
+                ]
+            ]
+        ]);
+    });
+    
     // Test endpoint to verify webhook configuration
     Route::get('/webhook-test', function() {
         return response()->json([

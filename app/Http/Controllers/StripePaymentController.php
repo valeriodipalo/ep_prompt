@@ -19,7 +19,8 @@ class StripePaymentController extends Controller
                 'user_id' => 'required|string',
                 'user_email' => 'required|email',
                 'success_url' => 'required|url',
-                'cancel_url' => 'required|url'
+                'cancel_url' => 'required|url',
+                'package' => 'required|string|in:starter,creator,salon'
             ]);
 
             $stripeSecretKey = env('STRIPE_SECRET');
@@ -30,6 +31,36 @@ class StripePaymentController extends Controller
                 ], 500);
             }
 
+            // Define pricing packages
+            $packages = [
+                'starter' => [
+                    'name' => 'StyleAI Starter',
+                    'description' => '3 generations + unlock premium styles and colors',
+                    'price' => 249, // $2.49 in cents
+                    'generations' => 3,
+                    'features' => ['Premium Styles', 'Premium Colors']
+                ],
+                'creator' => [
+                    'name' => 'StyleAI Creator',
+                    'description' => '10 generations + premium styles and colors',
+                    'price' => 449, // $4.49 in cents
+                    'generations' => 10,
+                    'features' => ['Premium Styles', 'Premium Colors']
+                ],
+                'salon' => [
+                    'name' => 'StyleAI Salon Package',
+                    'description' => '100 generations + premium features + white labeling + custom integration',
+                    'price' => 1999, // $19.99 in cents
+                    'generations' => 100,
+                    'features' => ['Premium Styles', 'Premium Colors', 'White Labeling', 'Custom Integration Support']
+                ]
+            ];
+
+            $selectedPackage = $packages[$request->package];
+            if (!$selectedPackage) {
+                return response()->json(['error' => 'Invalid package selected'], 400);
+            }
+
             // Create Stripe Checkout Session
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $stripeSecretKey,
@@ -37,16 +68,17 @@ class StripePaymentController extends Controller
             ])->asForm()->post('https://api.stripe.com/v1/checkout/sessions', [
                 'payment_method_types[0]' => 'card',
                 'line_items[0][price_data][currency]' => 'usd',
-                'line_items[0][price_data][product_data][name]' => 'StyleAI Premium',
-                'line_items[0][price_data][product_data][description]' => 'Unlimited hairstyle transformations and exclusive styles',
-                'line_items[0][price_data][unit_amount]' => 999, // $9.99 in cents
+                'line_items[0][price_data][product_data][name]' => $selectedPackage['name'],
+                'line_items[0][price_data][product_data][description]' => $selectedPackage['description'],
+                'line_items[0][price_data][unit_amount]' => $selectedPackage['price'],
                 'line_items[0][quantity]' => 1,
                 'mode' => 'payment',
                 'success_url' => $request->success_url,
                 'cancel_url' => $request->cancel_url,
                 'customer_email' => $request->user_email,
                 'metadata[user_id]' => $request->user_id,
-                'metadata[product]' => 'styleai_premium',
+                'metadata[package]' => $request->package,
+                'metadata[generations]' => $selectedPackage['generations'],
             ]);
 
             if ($response->successful()) {
@@ -136,14 +168,18 @@ class StripePaymentController extends Controller
                 $session = $event['data']['object'];
                 $userId = $session['metadata']['user_id'] ?? null;
                 $userEmail = $session['customer_email'] ?? null;
+                $package = $session['metadata']['package'] ?? null;
+                $generations = (int)($session['metadata']['generations'] ?? 0);
 
-                if ($userId && $userEmail) {
-                    // Update user to premium in Supabase
-                    $this->upgradeToPremium($userId, $userEmail, $session['id']);
+                if ($userId && $userEmail && $package) {
+                    // Process package purchase
+                    $this->processPackagePurchase($userId, $userEmail, $package, $generations, $session['id']);
                     
-                    Log::info('Premium upgrade completed', [
+                    Log::info('Package purchase completed', [
                         'user_id' => $userId,
                         'user_email' => $userEmail,
+                        'package' => $package,
+                        'generations' => $generations,
                         'session_id' => $session['id']
                     ]);
                 }
@@ -162,9 +198,9 @@ class StripePaymentController extends Controller
     }
 
     /**
-     * Upgrade user to premium in Supabase
+     * Process package purchase and update user in Supabase
      */
-    private function upgradeToPremium(string $userId, string $userEmail, string $sessionId): void
+    private function processPackagePurchase(string $userId, string $userEmail, string $package, int $generations, string $sessionId): void
     {
         try {
             $supabaseUrl = env('SUPABASE_URL');
@@ -174,14 +210,18 @@ class StripePaymentController extends Controller
                 throw new \Exception('Supabase configuration missing');
             }
 
-            // Update user profile to premium
+            // Update user profile with package data
+            $isPremium = in_array($package, ['creator', 'salon']); // Starter gets premium features but not unlimited
+            
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $supabaseServiceKey,
                 'Content-Type' => 'application/json',
                 'apikey' => $supabaseServiceKey
             ])->patch($supabaseUrl . '/rest/v1/user_profiles', [
-                'is_premium' => true,
-                'upgraded_at' => now()->toISOString()
+                'is_premium' => $isPremium,
+                'current_package' => $package,
+                'generations_remaining' => $generations,
+                'package_purchased_at' => now()->toISOString()
             ], [
                 'email' => 'eq.' . $userEmail
             ]);
@@ -189,6 +229,14 @@ class StripePaymentController extends Controller
             if (!$response->successful()) {
                 throw new \Exception('Failed to update user profile: ' . $response->body());
             }
+
+            // Get package info for payment record
+            $packages = [
+                'starter' => ['name' => 'StyleAI Starter', 'price' => 249, 'generations' => 3],
+                'creator' => ['name' => 'StyleAI Creator', 'price' => 449, 'generations' => 10],
+                'salon' => ['name' => 'StyleAI Salon Package', 'price' => 1999, 'generations' => 100]
+            ];
+            $packageInfo = $packages[$package] ?? ['price' => 0];
 
             // Record payment in payments table
             Http::withHeaders([
@@ -198,16 +246,19 @@ class StripePaymentController extends Controller
             ])->post($supabaseUrl . '/rest/v1/payments', [
                 'user_id' => $userId,
                 'stripe_session_id' => $sessionId,
-                'amount' => 999,
+                'package_type' => $package,
+                'generations_purchased' => $generations,
+                'amount' => $packageInfo['price'],
                 'currency' => 'usd',
                 'status' => 'completed',
                 'created_at' => now()->toISOString()
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Failed to upgrade user to premium', [
+            Log::error('Failed to process package purchase', [
                 'user_id' => $userId,
                 'user_email' => $userEmail,
+                'package' => $package,
                 'error' => $e->getMessage()
             ]);
         }
