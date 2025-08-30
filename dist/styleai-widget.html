@@ -50,6 +50,27 @@
             border-radius: 4px;
             background: #e5e7eb;
         }
+        
+        /* Confetti Animation */
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        
+        .confetti-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-gray-50 to-purple-50 min-h-screen py-8">
@@ -129,6 +150,19 @@
             const [showPaymentModal, setShowPaymentModal] = React.useState(false);
             const [isProcessingPayment, setIsProcessingPayment] = React.useState(false);
             const [isTestMode, setIsTestMode] = React.useState(false);
+            
+            // Welcome banner states
+            const [showWelcomeBanner, setShowWelcomeBanner] = React.useState(false);
+            const [welcomeData, setWelcomeData] = React.useState(null);
+            const [showConfetti, setShowConfetti] = React.useState(false);
+            
+            // Pricing states
+            const [pricingPackages, setPricingPackages] = React.useState(null);
+            const [selectedPackage, setSelectedPackage] = React.useState('creator'); // Default to popular package
+            
+            // Payment success states
+            const [showPaymentSuccess, setShowPaymentSuccess] = React.useState(false);
+            const [paymentSuccessData, setPaymentSuccessData] = React.useState(null);
 
             // Witty loading messages
             const loadingMessages = [
@@ -156,21 +190,249 @@
                         const authData = JSON.parse(storedAuth);
                         console.log('✅ Found stored authentication:', authData);
                         
-                        // Set user as authenticated
-                        setUser({
-                            id: 'authenticated-user', // We'll get real user data from the token
-                            email: 'confirmed-user'
-                        });
-                        
-                        if (urlParams.get('auth') === 'confirmed') {
-                            alert('Welcome back! Your email has been confirmed and you can now generate hairstyles.');
+                        // Check if we have complete user data from auto-login
+                        if (authData.user && authData.profile) {
+                            // Full auto-login with profile data
+                            setUser(authData.user);
+                            setUserProfile(authData.profile);
+                            console.log('✅ Auto-login with full profile:', authData.profile);
+                            
+                            if (urlParams.get('auto_login') === 'true') {
+                                // Show beautiful welcome banner for first-time users only
+                                setTimeout(() => {
+                                    showWelcome(authData.user, authData.profile, true);
+                                }, 500);
+                            }
+                        } else {
+                            // Legacy auth data or incomplete - fetch profile
+                            setUser({
+                                id: 'authenticated-user',
+                                email: 'confirmed-user'
+                            });
+                            
+                            // Try to fetch complete profile
+                            fetchUserProfile(authData.access_token);
                         }
+                        
+                        // No banner for returning users - just silent auth restoration
                     } catch (error) {
                         console.error('Error parsing stored auth:', error);
                         localStorage.removeItem('supabase_auth');
                     }
                 }
             }, []);
+
+            // Fetch user profile using access token
+            const fetchUserProfile = async (accessToken) => {
+                try {
+                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                        ? 'http://localhost:8001' 
+                        : 'https://web-production-5e40.up.railway.app';
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        setUser(data.user);
+                        setUserProfile(data.profile);
+                        console.log('✅ Profile fetched successfully:', data.profile);
+                        
+                        // Update localStorage with complete data
+                        const storedAuth = JSON.parse(localStorage.getItem('supabase_auth') || '{}');
+                        localStorage.setItem('supabase_auth', JSON.stringify({
+                            ...storedAuth,
+                            user: data.user,
+                            profile: data.profile
+                        }));
+                    } else {
+                        console.error('Failed to fetch user profile');
+                    }
+                } catch (error) {
+                    console.error('Error fetching user profile:', error);
+                }
+            };
+
+            // Show welcome banner with confetti
+            const showWelcome = (userData, profileData, isNewUser = false) => {
+                const tokensRemaining = profileData?.tokens_remaining || 2;
+                const userName = userData?.name || profileData?.name || 'Stylist';
+                
+                setWelcomeData({
+                    name: userName,
+                    tokens: tokensRemaining,
+                    isNewUser: isNewUser,
+                    isPremium: profileData?.is_premium || false
+                });
+                
+                setShowWelcomeBanner(true);
+                setShowConfetti(true);
+                
+                // Hide confetti after 3 seconds
+                setTimeout(() => setShowConfetti(false), 3000);
+                
+                // Auto-hide banner after 8 seconds
+                setTimeout(() => setShowWelcomeBanner(false), 8000);
+            };
+
+            // Load pricing packages
+            const loadPricingPackages = async () => {
+                try {
+                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                        ? 'http://localhost:8001' 
+                        : 'https://web-production-5e40.up.railway.app';
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/payments/packages`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        setPricingPackages(data.packages);
+                        console.log('✅ Pricing packages loaded:', data.packages);
+                    }
+                } catch (error) {
+                    console.error('Error loading pricing packages:', error);
+                }
+            };
+
+            // Load pricing packages on component mount
+            React.useEffect(() => {
+                loadPricingPackages();
+            }, []);
+
+            // Check for payment success on component mount
+            React.useEffect(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const paymentStatus = urlParams.get('payment');
+                
+                if (paymentStatus === 'success') {
+                    // Payment was successful - refresh user profile and show success modal
+                    setTimeout(() => {
+                        refreshUserProfileAfterPayment();
+                    }, 1000);
+                }
+            }, []);
+
+            // Manual payment check function
+            const checkPaymentStatus = async () => {
+                console.log('🔍 DEBUG: Manual payment status check started');
+                console.log('🔍 DEBUG: Current user:', user);
+                console.log('🔍 DEBUG: Current userProfile:', userProfile);
+                
+                try {
+                    const oldProfile = { ...userProfile };
+                    await refreshUserProfileAfterPayment();
+                    
+                    console.log('🔍 DEBUG: Profile before refresh:', oldProfile);
+                    console.log('🔍 DEBUG: Profile after refresh:', userProfile);
+                    
+                    // Show notification
+                    const notification = document.createElement('div');
+                    notification.className = 'fixed top-4 right-4 bg-green-100 border border-green-300 text-green-700 px-4 py-3 rounded-lg shadow-lg z-50';
+                    notification.innerHTML = '✅ Account updated! Check your token count.';
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 4000);
+                } catch (error) {
+                    console.error('❌ DEBUG: Error checking payment status:', error);
+                    
+                    // Show error notification
+                    const notification = document.createElement('div');
+                    notification.className = 'fixed top-4 right-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50';
+                    notification.innerHTML = '❌ Failed to check payment status. Check console for details.';
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 4000);
+                }
+            };
+
+            // Refresh user profile after successful payment
+            const refreshUserProfileAfterPayment = async () => {
+                console.log('🔍 DEBUG: Starting profile refresh after payment');
+                
+                try {
+                    const storedAuth = localStorage.getItem('supabase_auth');
+                    console.log('🔍 DEBUG: Stored auth:', storedAuth ? 'Found' : 'Not found');
+                    
+                    if (!storedAuth) {
+                        console.error('❌ DEBUG: No stored auth found after payment');
+                        return;
+                    }
+
+                    const authData = JSON.parse(storedAuth);
+                    console.log('🔍 DEBUG: Auth data:', authData);
+                    
+                    if (!authData.access_token) {
+                        console.error('❌ DEBUG: No access token found after payment');
+                        return;
+                    }
+
+                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                        ? 'http://localhost:8001' 
+                        : 'https://web-production-5e40.up.railway.app';
+                    
+                    // Fetch updated user profile
+                    console.log('🔍 DEBUG: Fetching profile from:', `${API_BASE_URL}/api/auth/profile`);
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+                        headers: {
+                            'Authorization': `Bearer ${authData.access_token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    console.log('🔍 DEBUG: Profile response status:', response.status);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('🔍 DEBUG: Profile data received:', data);
+                        
+                        // Update user state
+                        setUser(data.user);
+                        setUserProfile(data.profile);
+                        
+                        console.log('✅ DEBUG: User state updated');
+                        console.log('✅ DEBUG: New profile:', data.profile);
+                        
+                        // Update localStorage
+                        localStorage.setItem('supabase_auth', JSON.stringify({
+                            ...authData,
+                            user: data.user,
+                            profile: data.profile
+                        }));
+                        
+                        // Show payment success modal
+                        const packageInfo = pricingPackages ? Object.values(pricingPackages).find(p => p.id === data.profile?.current_package) : null;
+                        
+                        setPaymentSuccessData({
+                            packageName: packageInfo?.name || 'Premium Package',
+                            packagePrice: packageInfo?.price || 0,
+                            generations: data.profile?.generations_remaining || 0,
+                            userName: data.user?.name || data.profile?.name || 'Stylist',
+                            features: packageInfo?.features || []
+                        });
+                        
+                        setShowPaymentSuccess(true);
+                        
+                        console.log('✅ User profile refreshed after payment:', data.profile);
+                    } else {
+                        console.error('Failed to refresh user profile after payment');
+                    }
+                } catch (error) {
+                    console.error('Error refreshing user profile after payment:', error);
+                }
+            };
 
             // Rotate loading messages every 2 seconds
             React.useEffect(() => {
@@ -349,17 +611,23 @@
             const handleGenerate = async () => {
                 // Validation: Check if style is selected
                 if (!selectedStyle) {
-                    alert('❌ Please select a hairstyle first!');
+                    // Show a more subtle notification instead of alert
+                    const notification = document.createElement('div');
+                    notification.className = 'fixed top-4 right-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50';
+                    notification.innerHTML = '⚠️ Please select a hairstyle first!';
+                    document.body.appendChild(notification);
+                    
+                    // Auto-remove after 3 seconds
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 3000);
                     return;
                 }
                 
-                // Validation: Check if color is selected
-                if (!colorChoice || 
-                    (colorChoice.type === 'single-tone' && !colorChoice.singleTone) ||
-                    (colorChoice.type === 'accented' && (!colorChoice.accented || !colorChoice.accented.baseColorId))) {
-                    alert('❌ Please select a color first!');
-                    return;
-                }
+                // Color is optional - users can generate with just hairstyle
+                // No validation needed for color selection
                 
                 // Check if user has enough tokens (for non-premium users, skip in test mode)
                 if (user && userProfile && !userProfile.is_premium && !isTestMode) {
@@ -367,7 +635,20 @@
                     const tokensRemaining = Math.max(0, 50 - tokensUsed);
                     
                     if (tokensRemaining < 5) {
-                        alert('❌ Not enough tokens! You need 5 tokens to generate a hairstyle. Upgrade to Premium for unlimited access.');
+                        // Show elegant notification for insufficient tokens
+                        const notification = document.createElement('div');
+                        notification.className = 'fixed top-4 right-4 bg-purple-100 border border-purple-300 text-purple-700 px-4 py-3 rounded-lg shadow-lg z-50';
+                        notification.innerHTML = '💎 Choose a package to continue styling!';
+                        document.body.appendChild(notification);
+                        
+                        setTimeout(() => {
+                            if (notification.parentNode) {
+                                notification.parentNode.removeChild(notification);
+                            }
+                        }, 4000);
+                        
+                        // Show pricing modal
+                        setShowPaymentModal(true);
                         return;
                     }
                 }
@@ -587,8 +868,8 @@
                         setShowAuthModal(false);
                         console.log('✅ Login successful:', result);
                         
-                        // Proceed to generation
-                        handleGenerate();
+                        // No welcome banner for regular login - just silent success
+                        // Users can immediately start using the app
                     } else {
                         alert('Login failed: ' + result.message);
                     }
@@ -626,10 +907,13 @@
                             setUserProfile(result.profile);
                             setShowAuthModal(false);
                             console.log('✅ Registration successful:', result);
-                            alert('Welcome! You have 10 free transformations to get started.');
                             
-                            // Proceed to generation
-                            handleGenerate();
+                            // Show beautiful welcome banner for new users
+                            setTimeout(() => {
+                                showWelcome(result.user, result.profile, true);
+                            }, 300);
+                            
+                            // Don't auto-proceed to generation - let user explore
                         }
                     } else {
                         alert('Registration failed: ' + result.message);
@@ -739,6 +1023,11 @@
 
             // Payment processing function
             const handlePremiumUpgrade = async () => {
+                console.log('🔍 DEBUG: Starting payment process');
+                console.log('🔍 DEBUG: User:', user);
+                console.log('🔍 DEBUG: Selected package:', selectedPackage);
+                console.log('🔍 DEBUG: Pricing packages:', pricingPackages);
+                
                 if (!user) {
                     alert('Please log in first to upgrade to Premium');
                     setShowPaymentModal(false);
@@ -746,7 +1035,14 @@
                     return;
                 }
 
+                if (!selectedPackage || !pricingPackages) {
+                    console.error('🔍 DEBUG: Missing package data');
+                    alert('Please select a package first');
+                    return;
+                }
+
                 setIsProcessingPayment(true);
+                console.log('🔍 DEBUG: Processing payment for package:', selectedPackage);
                 
                 try {
                                     const API_BASE_URL = window.location.hostname === 'localhost' 
@@ -754,6 +1050,14 @@
                     : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                     
                     // Create Stripe checkout session
+                    console.log('🔍 DEBUG: Creating checkout session with data:', {
+                        user_id: user.id,
+                        user_email: user.email || userProfile?.email,
+                        package: selectedPackage,
+                        success_url: `${window.location.origin}${window.location.pathname}?payment=success`,
+                        cancel_url: `${window.location.origin}${window.location.pathname}?payment=cancelled`
+                    });
+                    
                     const response = await fetch(`${API_BASE_URL}/api/payments/create-checkout-session`, {
                         method: 'POST',
                         headers: {
@@ -762,6 +1066,7 @@
                         body: JSON.stringify({
                             user_id: user.id,
                             user_email: user.email || userProfile?.email,
+                            package: selectedPackage,
                             success_url: `${window.location.origin}${window.location.pathname}?payment=success`,
                             cancel_url: `${window.location.origin}${window.location.pathname}?payment=cancelled`
                         })
@@ -770,8 +1075,33 @@
                     const result = await response.json();
                     
                     if (response.ok && result.checkout_url) {
-                        // Redirect to Stripe Checkout
-                        window.location.href = result.checkout_url;
+                        console.log('🔍 DEBUG: Checkout URL received:', result.checkout_url);
+                        console.log('🔍 DEBUG: Attempting to open in new tab...');
+                        
+                        // Try to open in new tab
+                        const newTab = window.open(result.checkout_url, '_blank');
+                        
+                        if (newTab) {
+                            console.log('✅ DEBUG: New tab opened successfully');
+                            // Show message to user about new tab
+                            const notification = document.createElement('div');
+                            notification.className = 'fixed top-4 right-4 bg-blue-100 border border-blue-300 text-blue-700 px-4 py-3 rounded-lg shadow-lg z-50';
+                            notification.innerHTML = '💳 Payment page opened in new tab. Complete your purchase there and then click "Check Payment Status" below!';
+                            document.body.appendChild(notification);
+                            
+                            setTimeout(() => {
+                                if (notification.parentNode) {
+                                    notification.parentNode.removeChild(notification);
+                                }
+                            }, 10000);
+                            
+                            // Close payment modal
+                            setShowPaymentModal(false);
+                        } else {
+                            console.error('❌ DEBUG: Failed to open new tab, falling back to same tab');
+                            // Fallback to same tab if popup blocked
+                            window.location.href = result.checkout_url;
+                        }
                     } else {
                         throw new Error(result.error || 'Failed to create checkout session');
                     }
@@ -843,9 +1173,16 @@
                                                     onClick={() => setShowPaymentModal(true)}
                                                     className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-3 rounded-lg text-xs font-medium hover:from-purple-600 hover:to-pink-600 transition-colors"
                                                 >
-                                                    Upgrade to Premium
+                                                    Choose Package
                                                 </button>
                                             )}
+                                            
+                                            <button
+                                                onClick={checkPaymentStatus}
+                                                className="w-full bg-blue-100 text-blue-700 py-2 px-3 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
+                                            >
+                                                💳 Check Payment Status
+                                            </button>
                                             
                                             <button
                                                 onClick={() => setIsTestMode(!isTestMode)}
@@ -894,15 +1231,15 @@
                                 <div className="bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 hover:shadow-xl transition-all duration-200">
                                     <div className="flex items-center space-x-2">
                                         <div className={`w-2 h-2 rounded-full ${
-                                            Math.max(0, 50 - (userProfile?.free_transformations_used || 0)) < 10 
+                                            Math.max(0, 2 - (userProfile?.free_transformations_used || 0)) < 1 
                                                 ? 'bg-red-500 animate-pulse' 
                                                 : 'bg-green-500'
                                         }`}></div>
                                         <div className="text-sm font-semibold text-gray-800">
-                                            {Math.max(0, 50 - (userProfile?.free_transformations_used || 0))} tokens
+                                            {Math.max(0, 2 - (userProfile?.free_transformations_used || 0))} generations
                                         </div>
                                     </div>
-                                    <div className="text-xs text-gray-500">5 per generation</div>
+                                    <div className="text-xs text-gray-500">Free transformations</div>
                                 </div>
                                 
                                 {/* Professional Token Tooltip */}
@@ -918,15 +1255,15 @@
                                         
                                         <div className="bg-gray-50 rounded-lg p-3">
                                             <div className="text-xs text-gray-600 space-y-1">
-                                                <div>• Each generation costs 5 tokens</div>
-                                                <div>• {Math.floor(Math.max(0, 50 - (userProfile?.free_transformations_used || 0)) / 5)} generations left</div>
+                                                <div>• Free tier: 2 transformations</div>
+                                                <div>• {Math.max(0, 2 - (userProfile?.free_transformations_used || 0))} generations left</div>
                                             </div>
                                         </div>
                                         
-                                        {Math.max(0, 50 - (userProfile?.free_transformations_used || 0)) < 10 && (
+                                        {Math.max(0, 2 - (userProfile?.free_transformations_used || 0)) < 1 && (
                                             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                                                 <div className="text-xs text-red-600 font-medium">⚠️ Running Low!</div>
-                                                <div className="text-xs text-red-500">Consider upgrading to Premium for unlimited access.</div>
+                                                <div className="text-xs text-red-500">Choose a package to continue styling!</div>
                                             </div>
                                         )}
                                         
@@ -951,6 +1288,105 @@
                             </div>
                         ) : null}
                     </div>
+                    
+                    {/* Welcome Banner with Confetti */}
+                    {showWelcomeBanner && welcomeData && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-2xl p-8 w-full max-w-lg mx-4 relative overflow-hidden">
+                                {/* Confetti Animation */}
+                                {showConfetti && (
+                                    <div className="absolute inset-0 pointer-events-none">
+                                        <div className="confetti-container">
+                                            {[...Array(50)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="absolute w-2 h-2 opacity-80"
+                                                    style={{
+                                                        backgroundColor: ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'][i % 5],
+                                                        left: `${Math.random() * 100}%`,
+                                                        animationDelay: `${Math.random() * 3}s`,
+                                                        animation: 'confetti-fall 3s linear infinite'
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                <div className="text-center relative z-10">
+                                    {/* Celebration Icon */}
+                                    <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3l14 9-14 9V3z"/>
+                                        </svg>
+                                    </div>
+                                    
+                                    {/* Welcome Message */}
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                                        {welcomeData.isNewUser ? '🎉 Welcome to StyleAI!' : '👋 Welcome Back!'}
+                                    </h2>
+                                    
+                                    <p className="text-lg text-gray-600 mb-4">
+                                        Thanks <span className="font-semibold text-purple-600">{welcomeData.name}</span> for 
+                                        {welcomeData.isNewUser ? ' joining us!' : ' returning!'}
+                                    </p>
+                                    
+                                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 mb-6">
+                                        <div className="flex items-center justify-center mb-4">
+                                            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-4">
+                                                <span className="text-white font-bold text-xl">{welcomeData.tokens}</span>
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-lg font-semibold text-gray-800">
+                                                    {welcomeData.tokens} Transformation{welcomeData.tokens !== 1 ? 's' : ''} Ready!
+                                                </p>
+                                                <p className="text-sm text-gray-600">
+                                                    {welcomeData.isNewUser 
+                                                        ? 'Perfect for experimenting with stunning new looks!' 
+                                                        : 'Time to create your next amazing transformation!'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        {!welcomeData.isPremium && (
+                                            <button 
+                                                onClick={() => {
+                                                    setShowWelcomeBanner(false);
+                                                    setShowPaymentModal(true);
+                                                }}
+                                                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all mb-3"
+                                            >
+                                                ✨ Unlock All Premium Features
+                                            </button>
+                                        )}
+                                        
+                                        <p className="text-xs text-gray-500 text-center">
+                                            {welcomeData.isNewUser 
+                                                ? 'Explore premium hairstyles and advanced color techniques!' 
+                                                : 'Access exclusive styles and unlimited transformations!'}
+                                        </p>
+                                    </div>
+                                    
+                                    <button 
+                                        onClick={() => setShowWelcomeBanner(false)}
+                                        className="bg-gray-100 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-200 transition-all font-medium"
+                                    >
+                                        Start Styling! 💇‍♀️
+                                    </button>
+                                </div>
+                                
+                                {/* Close button */}
+                                <button
+                                    onClick={() => setShowWelcomeBanner(false)}
+                                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     
                     {/* Header */}
                     <div className="text-center mb-6">
@@ -984,7 +1420,7 @@
                                     <div className="text-sm text-yellow-700">Test API connections and simulate user states</div>
                                 </div>
                                 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                                     <button
                                         onClick={testConnection}
                                         className="px-4 py-3 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
@@ -996,6 +1432,43 @@
                                         className="px-4 py-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
                                     >
                                         🗄️ Test Database
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            if (!user?.email) {
+                                                alert('Please login first');
+                                                return;
+                                            }
+                                            
+                                            const API_BASE_URL = window.location.hostname === 'localhost' 
+                                                ? 'http://localhost:8001' 
+                                                : 'https://web-production-5e40.up.railway.app';
+                                            
+                                            try {
+                                                const response = await fetch(`${API_BASE_URL}/api/payments/debug-upgrade`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        user_email: user.email || userProfile?.email,
+                                                        package: 'creator'
+                                                    })
+                                                });
+                                                
+                                                const result = await response.json();
+                                                console.log('🔍 DEBUG: Manual upgrade result:', result);
+                                                alert(result.success ? '✅ Debug upgrade successful!' : '❌ Debug upgrade failed: ' + result.error);
+                                                
+                                                if (result.success) {
+                                                    await checkPaymentStatus();
+                                                }
+                                            } catch (error) {
+                                                console.error('❌ DEBUG: Manual upgrade error:', error);
+                                                alert('❌ Debug upgrade failed: ' + error.message);
+                                            }
+                                        }}
+                                        className="px-4 py-3 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors"
+                                    >
+                                        💎 Test Upgrade
                                     </button>
                                     <button
                                         onClick={() => {
@@ -1039,6 +1512,185 @@
                                 <div className="mt-4 text-center">
                                     <div className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
                                         ✅ Authentication Bypassed - Generate Without Login
+                                    </div>
+                                </div>
+                                
+                                {/* Payment Testing Buttons - Visible Section */}
+                                <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mt-4">
+                                    <h4 className="text-md font-semibold text-purple-800 mb-3 text-center">💳 Payment Testing</h4>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        <button
+                                            onClick={async () => {
+                                                if (!user?.email && !userProfile?.email) {
+                                                    alert('Please login first to test payment');
+                                                    return;
+                                                }
+                                                
+                                                const API_BASE_URL = window.location.hostname === 'localhost' 
+                                                    ? 'http://localhost:8001' 
+                                                    : 'https://web-production-5e40.up.railway.app';
+                                                
+                                                console.log('🔍 DEBUG: Testing upgrade for user:', user?.email || userProfile?.email);
+                                                
+                                                try {
+                                                    const response = await fetch(`${API_BASE_URL}/api/payments/debug-upgrade`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            user_email: user?.email || userProfile?.email,
+                                                            package: 'creator'
+                                                        })
+                                                    });
+                                                    
+                                                    const result = await response.json();
+                                                    console.log('🔍 DEBUG: Manual upgrade result:', result);
+                                                    alert(result.success ? '✅ Debug upgrade successful! Check your token count.' : '❌ Debug upgrade failed: ' + result.error);
+                                                    
+                                                    if (result.success) {
+                                                        setTimeout(() => {
+                                                            checkPaymentStatus();
+                                                        }, 1000);
+                                                    }
+                                                } catch (error) {
+                                                    console.error('❌ DEBUG: Manual upgrade error:', error);
+                                                    alert('❌ Debug upgrade failed: ' + error.message);
+                                                }
+                                            }}
+                                            className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                                        >
+                                            💎 Test Upgrade (Creator Package)
+                                        </button>
+                                        
+                                        <button
+                                            onClick={async () => {
+                                                if (!user?.email && !userProfile?.email) {
+                                                    alert('Please login first to test tokens');
+                                                    return;
+                                                }
+                                                
+                                                const API_BASE_URL = window.location.hostname === 'localhost' 
+                                                    ? 'http://localhost:8001' 
+                                                    : 'https://web-production-5e40.up.railway.app';
+                                                
+                                                console.log('🔍 DEBUG: Testing token update for user:', user?.email || userProfile?.email);
+                                                
+                                                try {
+                                                    const response = await fetch(`${API_BASE_URL}/api/auth/test-token-update`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            user_email: user?.email || userProfile?.email,
+                                                            tokens: 100
+                                                        })
+                                                    });
+                                                    
+                                                    const result = await response.json();
+                                                    console.log('🔍 DEBUG: Token update result:', result);
+                                                    alert(result.success ? '✅ Tokens updated to 100! Refresh to see changes.' : '❌ Token update failed: ' + result.error);
+                                                    
+                                                    if (result.success) {
+                                                        setTimeout(() => {
+                                                            checkPaymentStatus();
+                                                        }, 1000);
+                                                    }
+                                                } catch (error) {
+                                                    console.error('❌ DEBUG: Token update error:', error);
+                                                    alert('❌ Token update failed: ' + error.message);
+                                                }
+                                            }}
+                                            className="w-full px-4 py-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                                        >
+                                            🪙 Test Token Update (100 tokens)
+                                        </button>
+                                        
+                                        <button
+                                            onClick={checkPaymentStatus}
+                                            className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                                        >
+                                            🔄 Refresh Profile & Tokens
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                {/* Payment Testing Section */}
+                                <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mt-4">
+                                    <h4 className="text-md font-semibold text-purple-800 mb-3">💳 Payment Testing</h4>
+                                    <div className="space-y-2">
+                                        <button
+                                            onClick={async () => {
+                                                if (!user?.email) {
+                                                    alert('Please login first');
+                                                    return;
+                                                }
+                                                
+                                                const API_BASE_URL = window.location.hostname === 'localhost' 
+                                                    ? 'http://localhost:8001' 
+                                                    : 'https://web-production-5e40.up.railway.app';
+                                                
+                                                try {
+                                                    const response = await fetch(`${API_BASE_URL}/api/payments/debug-upgrade`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            user_email: user.email || userProfile?.email,
+                                                            package: 'creator'
+                                                        })
+                                                    });
+                                                    
+                                                    const result = await response.json();
+                                                    console.log('🔍 DEBUG: Manual upgrade result:', result);
+                                                    alert(result.success ? '✅ Debug upgrade successful!' : '❌ Debug upgrade failed: ' + result.error);
+                                                    
+                                                    if (result.success) {
+                                                        await checkPaymentStatus();
+                                                    }
+                                                } catch (error) {
+                                                    console.error('❌ DEBUG: Manual upgrade error:', error);
+                                                    alert('❌ Debug upgrade failed: ' + error.message);
+                                                }
+                                            }}
+                                            className="w-full px-4 py-3 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors"
+                                        >
+                                            💎 Test Upgrade (Creator Package)
+                                        </button>
+                                        
+                                        <button
+                                            onClick={async () => {
+                                                if (!user?.email) {
+                                                    alert('Please login first');
+                                                    return;
+                                                }
+                                                
+                                                const API_BASE_URL = window.location.hostname === 'localhost' 
+                                                    ? 'http://localhost:8001' 
+                                                    : 'https://web-production-5e40.up.railway.app';
+                                                
+                                                try {
+                                                    const response = await fetch(`${API_BASE_URL}/api/auth/test-token-update`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            user_email: user.email || userProfile?.email,
+                                                            tokens: 100
+                                                        })
+                                                    });
+                                                    
+                                                    const result = await response.json();
+                                                    console.log('🔍 DEBUG: Token update result:', result);
+                                                    alert(result.success ? '✅ Tokens updated!' : '❌ Token update failed: ' + result.error);
+                                                    
+                                                    if (result.success) {
+                                                        await checkPaymentStatus();
+                                                    }
+                                                } catch (error) {
+                                                    console.error('❌ DEBUG: Token update error:', error);
+                                                    alert('❌ Token update failed: ' + error.message);
+                                                }
+                                            }}
+                                            className="w-full px-4 py-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
+                                        >
+                                            🪙 Test Token Update (100 tokens)
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -1296,7 +1948,7 @@
                                                     onClick={() => setShowPaymentModal(true)}
                                                     className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full hover:from-purple-600 hover:to-pink-600 transition-colors"
                                                 >
-                                                    Upgrade to Premium - $9.99
+                                                    Unlock Premium - from $2.49
                                                 </button>
                                             </div>
                                         </div>
@@ -1729,9 +2381,6 @@
                             </div>
 
                             {selectedStyle && (
-                                (colorChoice.type === 'single-tone' && colorChoice.singleTone) || 
-                                (colorChoice.type === 'accented' && colorChoice.accented && colorChoice.accented.baseColorId)
-                            ) && (
                                 <button
                                     onClick={checkAuthAndProceed}
                                     disabled={isGenerating}
@@ -1987,7 +2636,7 @@
                                     <p className="text-gray-600 text-sm">
                                         {authMode === 'login' 
                                             ? 'Sign in to generate your hairstyle transformation' 
-                                            : 'Create an account and get 10 free transformations!'
+                                            : 'Create an account and get 2 free transformations!'
                                         }
                                     </p>
                                 </div>
@@ -2018,80 +2667,94 @@
                         </div>
                     )}
 
-                    {/* Payment Modal */}
-                    {showPaymentModal && (
+                    {/* Three-Tier Pricing Modal */}
+                    {showPaymentModal && pricingPackages && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                            <div className="bg-white rounded-xl p-6 w-full max-w-md">
-                                <div className="text-center mb-6">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-                                        </svg>
-                                    </div>
-                                    <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                                        Upgrade to Premium
-                                    </h3>
-                                    <p className="text-gray-600 text-sm mb-4">
-                                        Unlock unlimited hairstyle transformations and exclusive styles!
-                                    </p>
+                            <div className="bg-white rounded-2xl p-8 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+                                <div className="text-center mb-8">
+                                    <h3 className="text-3xl font-bold text-gray-800 mb-2">Choose Your StyleAI Package</h3>
+                                    <p className="text-gray-600 text-lg">Professional hairstyle transformations for every need</p>
                                 </div>
 
-                                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 mb-6">
-                                    <div className="text-center">
-                                        <div className="text-3xl font-bold text-purple-600 mb-2">$9.99</div>
-                                        <div className="text-sm text-gray-600 mb-4">One-time payment</div>
-                                        
-                                        <div className="space-y-2 text-left">
-                                            <div className="flex items-center text-sm text-gray-700">
-                                                <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
-                                                </svg>
-                                                Unlimited transformations
+                                <div className="grid md:grid-cols-3 gap-6 mb-8">
+                                    {Object.values(pricingPackages).map((pkg) => (
+                                        <div 
+                                            key={pkg.id}
+                                            className={`relative rounded-2xl border-2 p-6 cursor-pointer transition-all duration-200 ${
+                                                selectedPackage === pkg.id 
+                                                    ? 'border-purple-500 bg-purple-50 shadow-xl scale-105 ring-2 ring-purple-200' 
+                                                    : 'border-gray-200 hover:border-purple-300 hover:shadow-lg hover:scale-102'
+                                            }`}
+                                            onClick={() => setSelectedPackage(pkg.id)}
+                                        >
+                                            {pkg.popular && (
+                                                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                                                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-4 py-2 rounded-full font-bold shadow-lg">
+                                                        ⭐ MOST POPULAR
+                                                    </div>
+                                                </div>
+                                            )}
+                                            
+                                            <div className="text-center">
+                                                <h4 className="text-xl font-bold text-gray-800 mb-3">{pkg.name}</h4>
+                                                <div className="mb-4">
+                                                    <span className="text-4xl font-bold text-purple-600">${pkg.price}</span>
+                                                    <span className="text-gray-500 text-sm ml-2">one-time</span>
+                                                </div>
+                                                <p className="text-gray-600 text-sm mb-6 min-h-[40px]">{pkg.description}</p>
+                                                
+                                                <div className="space-y-3 text-left">
+                                                    <div className="flex items-center justify-center mb-4">
+                                                        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mr-3">
+                                                            <span className="text-white font-bold text-lg">{pkg.generations}</span>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-lg font-bold text-gray-800">{pkg.generations} Generations</div>
+                                                            <div className="text-xs text-gray-500">{pkg.tokens} tokens included</div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {pkg.features.map((feature, index) => (
+                                                        <div key={index} className="flex items-center text-sm text-gray-700">
+                                                            <svg className="w-4 h-4 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
+                                                            </svg>
+                                                            <span>{feature}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center text-sm text-gray-700">
-                                                <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
-                                                </svg>
-                                                Exclusive premium styles
-                                            </div>
-                                            <div className="flex items-center text-sm text-gray-700">
-                                                <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
-                                                </svg>
-                                                Premium color options
-                                            </div>
-                                            <div className="flex items-center text-sm text-gray-700">
-                                                <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
-                                                </svg>
-                                                Priority processing
-                                            </div>
+                                            
+                                            {selectedPackage === pkg.id && (
+                                                <div className="absolute inset-0 bg-purple-500 bg-opacity-10 rounded-2xl pointer-events-none"></div>
+                                            )}
                                         </div>
-                                    </div>
+                                    ))}
                                 </div>
-
-                                <button
-                                    onClick={handlePremiumUpgrade}
-                                    disabled={isProcessingPayment}
-                                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-6 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
-                                >
-                                    {isProcessingPayment ? (
-                                        <div className="flex items-center justify-center">
-                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                                            Processing...
-                                        </div>
-                                    ) : (
-                                        'Upgrade Now - $9.99'
-                                    )}
-                                </button>
 
                                 <div className="text-center">
-                                    <p className="text-xs text-gray-500 mb-2">
-                                        Secure payment powered by Stripe
+                                    <button
+                                        onClick={handlePremiumUpgrade}
+                                        disabled={isProcessingPayment || !selectedPackage}
+                                        className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 px-12 rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg shadow-lg"
+                                    >
+                                        {isProcessingPayment ? (
+                                            <div className="flex items-center justify-center">
+                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                                                Processing Payment...
+                                            </div>
+                                        ) : (
+                                            `Get ${pricingPackages[selectedPackage]?.name} - $${pricingPackages[selectedPackage]?.price}`
+                                        )}
+                                    </button>
+                                    
+                                    <p className="text-xs text-gray-500 mt-4 mb-2">
+                                        🔒 Secure payment powered by Stripe • One-time payment • No subscription required
                                     </p>
+                                    
                                     <button
                                         onClick={() => setShowPaymentModal(false)}
-                                        className="text-sm text-gray-500 hover:text-gray-700"
+                                        className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                                     >
                                         Maybe later
                                     </button>
@@ -2099,10 +2762,100 @@
 
                                 <button
                                     onClick={() => setShowPaymentModal(false)}
-                                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                                    className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
                                 >
-                                    <X className="h-5 w-5" />
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
                                 </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Payment Success Modal */}
+                    {showPaymentSuccess && paymentSuccessData && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-2xl p-8 w-full max-w-lg mx-4 relative overflow-hidden">
+                                {/* Success Confetti */}
+                                <div className="absolute inset-0 pointer-events-none">
+                                    <div className="confetti-container">
+                                        {[...Array(30)].map((_, i) => (
+                                            <div
+                                                key={i}
+                                                className="absolute w-2 h-2 opacity-80"
+                                                style={{
+                                                    backgroundColor: ['#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#3b82f6'][i % 5],
+                                                    left: `${Math.random() * 100}%`,
+                                                    animationDelay: `${Math.random() * 2}s`,
+                                                    animation: 'confetti-fall 4s linear infinite'
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                <div className="text-center relative z-10">
+                                    {/* Success Icon */}
+                                    <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                    </div>
+                                    
+                                    {/* Success Message */}
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                                        🎉 Payment Successful!
+                                    </h2>
+                                    
+                                    <p className="text-lg text-gray-600 mb-6">
+                                        Thanks <span className="font-semibold text-purple-600">{paymentSuccessData.userName}</span>! 
+                                        Your <span className="font-semibold text-green-600">{paymentSuccessData.packageName}</span> is now active.
+                                    </p>
+                                    
+                                    {/* Package Details */}
+                                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 mb-6">
+                                        <div className="flex items-center justify-center mb-4">
+                                            <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mr-4">
+                                                <span className="text-white font-bold text-xl">{paymentSuccessData.generations}</span>
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-lg font-bold text-gray-800">
+                                                    {paymentSuccessData.generations} Generations Available!
+                                                </p>
+                                                <p className="text-sm text-gray-600">
+                                                    Ready to create amazing transformations
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="space-y-2 text-left">
+                                            <h4 className="font-semibold text-gray-800 mb-3">Your Premium Features:</h4>
+                                            {paymentSuccessData.features.map((feature, index) => (
+                                                <div key={index} className="flex items-center text-sm text-gray-700">
+                                                    <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
+                                                    </svg>
+                                                    <span>{feature}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    
+                                    <button 
+                                        onClick={() => {
+                                            setShowPaymentSuccess(false);
+                                            // Clean up URL
+                                            window.history.replaceState({}, document.title, window.location.pathname);
+                                        }}
+                                        className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all font-semibold text-lg"
+                                    >
+                                        Start Creating! 🎨
+                                    </button>
+                                    
+                                    <p className="text-xs text-gray-500 mt-4">
+                                        All premium features are now unlocked and ready to use!
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -2115,10 +2868,26 @@
         const AuthForm = ({ mode, onSubmit, isLoading, onSwitchMode }) => {
             const [email, setEmail] = React.useState('');
             const [password, setPassword] = React.useState('');
+            const [confirmPassword, setConfirmPassword] = React.useState('');
             const [name, setName] = React.useState('');
+            const [showPassword, setShowPassword] = React.useState(false);
+            const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
             const handleSubmit = (e) => {
                 e.preventDefault();
+                
+                // Password validation for registration
+                if (mode === 'register') {
+                    if (password !== confirmPassword) {
+                        alert('Passwords do not match. Please try again.');
+                        return;
+                    }
+                    if (password.length < 6) {
+                        alert('Password must be at least 6 characters long.');
+                        return;
+                    }
+                }
+                
                 if (mode === 'login') {
                     onSubmit(email, password);
                 } else {
@@ -2162,16 +2931,76 @@
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Password
                         </label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
-                            placeholder="••••••••"
-                            minLength="6"
-                            required
-                        />
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                                placeholder="••••••••"
+                                minLength="6"
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                            >
+                                {showPassword ? (
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                                    </svg>
+                                ) : (
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
                     </div>
+
+                    {mode === 'register' && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Confirm Password
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-purple-500 focus:border-purple-500 ${
+                                        password && confirmPassword && password !== confirmPassword 
+                                            ? 'border-red-300 bg-red-50' 
+                                            : 'border-gray-300'
+                                    }`}
+                                    placeholder="••••••••"
+                                    minLength="6"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                >
+                                    {showConfirmPassword ? (
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
+                            {password && confirmPassword && password !== confirmPassword && (
+                                <p className="text-red-500 text-xs mt-1">Passwords do not match</p>
+                            )}
+                        </div>
+                    )}
 
                     <button
                         type="submit"
