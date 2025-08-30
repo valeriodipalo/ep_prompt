@@ -159,6 +159,10 @@
             // Pricing states
             const [pricingPackages, setPricingPackages] = React.useState(null);
             const [selectedPackage, setSelectedPackage] = React.useState('creator'); // Default to popular package
+            
+            // Payment success states
+            const [showPaymentSuccess, setShowPaymentSuccess] = React.useState(false);
+            const [paymentSuccessData, setPaymentSuccessData] = React.useState(null);
 
             // Witty loading messages
             const loadingMessages = [
@@ -298,6 +302,82 @@
             React.useEffect(() => {
                 loadPricingPackages();
             }, []);
+
+            // Check for payment success on component mount
+            React.useEffect(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const paymentStatus = urlParams.get('payment');
+                
+                if (paymentStatus === 'success') {
+                    // Payment was successful - refresh user profile and show success modal
+                    setTimeout(() => {
+                        refreshUserProfileAfterPayment();
+                    }, 1000);
+                }
+            }, []);
+
+            // Refresh user profile after successful payment
+            const refreshUserProfileAfterPayment = async () => {
+                try {
+                    const storedAuth = localStorage.getItem('supabase_auth');
+                    if (!storedAuth) {
+                        console.log('No stored auth found after payment');
+                        return;
+                    }
+
+                    const authData = JSON.parse(storedAuth);
+                    if (!authData.access_token) {
+                        console.log('No access token found after payment');
+                        return;
+                    }
+
+                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                        ? 'http://localhost:8001' 
+                        : 'https://web-production-5e40.up.railway.app';
+                    
+                    // Fetch updated user profile
+                    const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+                        headers: {
+                            'Authorization': `Bearer ${authData.access_token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        // Update user state
+                        setUser(data.user);
+                        setUserProfile(data.profile);
+                        
+                        // Update localStorage
+                        localStorage.setItem('supabase_auth', JSON.stringify({
+                            ...authData,
+                            user: data.user,
+                            profile: data.profile
+                        }));
+                        
+                        // Show payment success modal
+                        const packageInfo = pricingPackages ? Object.values(pricingPackages).find(p => p.id === data.profile?.current_package) : null;
+                        
+                        setPaymentSuccessData({
+                            packageName: packageInfo?.name || 'Premium Package',
+                            packagePrice: packageInfo?.price || 0,
+                            generations: data.profile?.generations_remaining || 0,
+                            userName: data.user?.name || data.profile?.name || 'Stylist',
+                            features: packageInfo?.features || []
+                        });
+                        
+                        setShowPaymentSuccess(true);
+                        
+                        console.log('✅ User profile refreshed after payment:', data.profile);
+                    } else {
+                        console.error('Failed to refresh user profile after payment');
+                    }
+                } catch (error) {
+                    console.error('Error refreshing user profile after payment:', error);
+                }
+            };
 
             // Rotate loading messages every 2 seconds
             React.useEffect(() => {
@@ -2365,6 +2445,94 @@
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
                                     </svg>
                                 </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Payment Success Modal */}
+                    {showPaymentSuccess && paymentSuccessData && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-2xl p-8 w-full max-w-lg mx-4 relative overflow-hidden">
+                                {/* Success Confetti */}
+                                <div className="absolute inset-0 pointer-events-none">
+                                    <div className="confetti-container">
+                                        {[...Array(30)].map((_, i) => (
+                                            <div
+                                                key={i}
+                                                className="absolute w-2 h-2 opacity-80"
+                                                style={{
+                                                    backgroundColor: ['#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#3b82f6'][i % 5],
+                                                    left: `${Math.random() * 100}%`,
+                                                    animationDelay: `${Math.random() * 2}s`,
+                                                    animation: 'confetti-fall 4s linear infinite'
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                <div className="text-center relative z-10">
+                                    {/* Success Icon */}
+                                    <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                    </div>
+                                    
+                                    {/* Success Message */}
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                                        🎉 Payment Successful!
+                                    </h2>
+                                    
+                                    <p className="text-lg text-gray-600 mb-6">
+                                        Thanks <span className="font-semibold text-purple-600">{paymentSuccessData.userName}</span>! 
+                                        Your <span className="font-semibold text-green-600">{paymentSuccessData.packageName}</span> is now active.
+                                    </p>
+                                    
+                                    {/* Package Details */}
+                                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 mb-6">
+                                        <div className="flex items-center justify-center mb-4">
+                                            <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mr-4">
+                                                <span className="text-white font-bold text-xl">{paymentSuccessData.generations}</span>
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-lg font-bold text-gray-800">
+                                                    {paymentSuccessData.generations} Generations Available!
+                                                </p>
+                                                <p className="text-sm text-gray-600">
+                                                    Ready to create amazing transformations
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="space-y-2 text-left">
+                                            <h4 className="font-semibold text-gray-800 mb-3">Your Premium Features:</h4>
+                                            {paymentSuccessData.features.map((feature, index) => (
+                                                <div key={index} className="flex items-center text-sm text-gray-700">
+                                                    <svg className="w-4 h-4 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
+                                                    </svg>
+                                                    <span>{feature}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    
+                                    <button 
+                                        onClick={() => {
+                                            setShowPaymentSuccess(false);
+                                            // Clean up URL
+                                            window.history.replaceState({}, document.title, window.location.pathname);
+                                        }}
+                                        className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all font-semibold text-lg"
+                                    >
+                                        Start Creating! 🎨
+                                    </button>
+                                    
+                                    <p className="text-xs text-gray-500 mt-4">
+                                        All premium features are now unlocked and ready to use!
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     )}
