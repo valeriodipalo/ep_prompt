@@ -318,8 +318,16 @@
 
             // Manual payment check function
             const checkPaymentStatus = async () => {
+                console.log('🔍 DEBUG: Manual payment status check started');
+                console.log('🔍 DEBUG: Current user:', user);
+                console.log('🔍 DEBUG: Current userProfile:', userProfile);
+                
                 try {
+                    const oldProfile = { ...userProfile };
                     await refreshUserProfileAfterPayment();
+                    
+                    console.log('🔍 DEBUG: Profile before refresh:', oldProfile);
+                    console.log('🔍 DEBUG: Profile after refresh:', userProfile);
                     
                     // Show notification
                     const notification = document.createElement('div');
@@ -333,22 +341,40 @@
                         }
                     }, 4000);
                 } catch (error) {
-                    console.error('Error checking payment status:', error);
+                    console.error('❌ DEBUG: Error checking payment status:', error);
+                    
+                    // Show error notification
+                    const notification = document.createElement('div');
+                    notification.className = 'fixed top-4 right-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50';
+                    notification.innerHTML = '❌ Failed to check payment status. Check console for details.';
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 4000);
                 }
             };
 
             // Refresh user profile after successful payment
             const refreshUserProfileAfterPayment = async () => {
+                console.log('🔍 DEBUG: Starting profile refresh after payment');
+                
                 try {
                     const storedAuth = localStorage.getItem('supabase_auth');
+                    console.log('🔍 DEBUG: Stored auth:', storedAuth ? 'Found' : 'Not found');
+                    
                     if (!storedAuth) {
-                        console.log('No stored auth found after payment');
+                        console.error('❌ DEBUG: No stored auth found after payment');
                         return;
                     }
 
                     const authData = JSON.parse(storedAuth);
+                    console.log('🔍 DEBUG: Auth data:', authData);
+                    
                     if (!authData.access_token) {
-                        console.log('No access token found after payment');
+                        console.error('❌ DEBUG: No access token found after payment');
                         return;
                     }
 
@@ -357,6 +383,8 @@
                         : 'https://web-production-5e40.up.railway.app';
                     
                     // Fetch updated user profile
+                    console.log('🔍 DEBUG: Fetching profile from:', `${API_BASE_URL}/api/auth/profile`);
+                    
                     const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
                         headers: {
                             'Authorization': `Bearer ${authData.access_token}`,
@@ -364,12 +392,18 @@
                         }
                     });
                     
+                    console.log('🔍 DEBUG: Profile response status:', response.status);
+                    
                     if (response.ok) {
                         const data = await response.json();
+                        console.log('🔍 DEBUG: Profile data received:', data);
                         
                         // Update user state
                         setUser(data.user);
                         setUserProfile(data.profile);
+                        
+                        console.log('✅ DEBUG: User state updated');
+                        console.log('✅ DEBUG: New profile:', data.profile);
                         
                         // Update localStorage
                         localStorage.setItem('supabase_auth', JSON.stringify({
@@ -989,6 +1023,11 @@
 
             // Payment processing function
             const handlePremiumUpgrade = async () => {
+                console.log('🔍 DEBUG: Starting payment process');
+                console.log('🔍 DEBUG: User:', user);
+                console.log('🔍 DEBUG: Selected package:', selectedPackage);
+                console.log('🔍 DEBUG: Pricing packages:', pricingPackages);
+                
                 if (!user) {
                     alert('Please log in first to upgrade to Premium');
                     setShowPaymentModal(false);
@@ -996,7 +1035,14 @@
                     return;
                 }
 
+                if (!selectedPackage || !pricingPackages) {
+                    console.error('🔍 DEBUG: Missing package data');
+                    alert('Please select a package first');
+                    return;
+                }
+
                 setIsProcessingPayment(true);
+                console.log('🔍 DEBUG: Processing payment for package:', selectedPackage);
                 
                 try {
                                     const API_BASE_URL = window.location.hostname === 'localhost' 
@@ -1004,6 +1050,14 @@
                     : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                     
                     // Create Stripe checkout session
+                    console.log('🔍 DEBUG: Creating checkout session with data:', {
+                        user_id: user.id,
+                        user_email: user.email || userProfile?.email,
+                        package: selectedPackage,
+                        success_url: `${window.location.origin}${window.location.pathname}?payment=success`,
+                        cancel_url: `${window.location.origin}${window.location.pathname}?payment=cancelled`
+                    });
+                    
                     const response = await fetch(`${API_BASE_URL}/api/payments/create-checkout-session`, {
                         method: 'POST',
                         headers: {
@@ -1021,23 +1075,33 @@
                     const result = await response.json();
                     
                     if (response.ok && result.checkout_url) {
-                        // Open Stripe Checkout in new tab to preserve login state
-                        window.open(result.checkout_url, '_blank');
+                        console.log('🔍 DEBUG: Checkout URL received:', result.checkout_url);
+                        console.log('🔍 DEBUG: Attempting to open in new tab...');
                         
-                        // Show message to user about new tab
-                        const notification = document.createElement('div');
-                        notification.className = 'fixed top-4 right-4 bg-blue-100 border border-blue-300 text-blue-700 px-4 py-3 rounded-lg shadow-lg z-50';
-                        notification.innerHTML = '💳 Payment page opened in new tab. Complete your purchase there!';
-                        document.body.appendChild(notification);
+                        // Try to open in new tab
+                        const newTab = window.open(result.checkout_url, '_blank');
                         
-                        setTimeout(() => {
-                            if (notification.parentNode) {
-                                notification.parentNode.removeChild(notification);
-                            }
-                        }, 8000);
-                        
-                        // Close payment modal
-                        setShowPaymentModal(false);
+                        if (newTab) {
+                            console.log('✅ DEBUG: New tab opened successfully');
+                            // Show message to user about new tab
+                            const notification = document.createElement('div');
+                            notification.className = 'fixed top-4 right-4 bg-blue-100 border border-blue-300 text-blue-700 px-4 py-3 rounded-lg shadow-lg z-50';
+                            notification.innerHTML = '💳 Payment page opened in new tab. Complete your purchase there and then click "Check Payment Status" below!';
+                            document.body.appendChild(notification);
+                            
+                            setTimeout(() => {
+                                if (notification.parentNode) {
+                                    notification.parentNode.removeChild(notification);
+                                }
+                            }, 10000);
+                            
+                            // Close payment modal
+                            setShowPaymentModal(false);
+                        } else {
+                            console.error('❌ DEBUG: Failed to open new tab, falling back to same tab');
+                            // Fallback to same tab if popup blocked
+                            window.location.href = result.checkout_url;
+                        }
                     } else {
                         throw new Error(result.error || 'Failed to create checkout session');
                     }
@@ -1368,6 +1432,43 @@
                                         className="px-4 py-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
                                     >
                                         🗄️ Test Database
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            if (!user?.email) {
+                                                alert('Please login first');
+                                                return;
+                                            }
+                                            
+                                            const API_BASE_URL = window.location.hostname === 'localhost' 
+                                                ? 'http://localhost:8001' 
+                                                : 'https://web-production-5e40.up.railway.app';
+                                            
+                                            try {
+                                                const response = await fetch(`${API_BASE_URL}/api/payments/debug-upgrade`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        user_email: user.email || userProfile?.email,
+                                                        package: 'creator'
+                                                    })
+                                                });
+                                                
+                                                const result = await response.json();
+                                                console.log('🔍 DEBUG: Manual upgrade result:', result);
+                                                alert(result.success ? '✅ Debug upgrade successful!' : '❌ Debug upgrade failed: ' + result.error);
+                                                
+                                                if (result.success) {
+                                                    await checkPaymentStatus();
+                                                }
+                                            } catch (error) {
+                                                console.error('❌ DEBUG: Manual upgrade error:', error);
+                                                alert('❌ Debug upgrade failed: ' + error.message);
+                                            }
+                                        }}
+                                        className="px-4 py-3 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors"
+                                    >
+                                        💎 Test Upgrade
                                     </button>
                                     <button
                                         onClick={() => {

@@ -136,6 +136,40 @@ Route::prefix('payments')->group(function () {
             'timestamp' => now()->toISOString()
         ]);
     });
+    
+    // Debug endpoint to manually test user upgrade
+    Route::post('/debug-upgrade', function(Request $request) {
+        try {
+            $request->validate([
+                'user_email' => 'required|email',
+                'package' => 'required|string'
+            ]);
+            
+            $controller = new App\Http\Controllers\StripePaymentController();
+            $method = new ReflectionMethod($controller, 'processPackagePurchase');
+            $method->setAccessible(true);
+            
+            $generations = [
+                'starter' => 3,
+                'creator' => 10, 
+                'salon' => 80
+            ][$request->package] ?? 0;
+            
+            $method->invoke($controller, 'debug-user-id', $request->user_email, $request->package, $generations, 'debug-session-id');
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Debug upgrade completed',
+                'package' => $request->package,
+                'generations' => $generations
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Debug upgrade failed: ' . $e->getMessage()
+            ], 500);
+        }
+    });
 });
 
 // Style and content routes (public for embedded widget)
