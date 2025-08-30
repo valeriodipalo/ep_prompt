@@ -387,9 +387,9 @@
                 setStep(4); // Go to results page immediately
                 
                 try {
-                    const API_BASE_URL = window.location.hostname === 'localhost' 
-                        ? 'http://localhost:8001' 
-                        : 'https://your-laravel-api.herokuapp.com'; // Replace with your backend URL
+                                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                     
                     console.log('Starting image transformation...');
                                     console.log('🎨 Style options:', {
@@ -502,7 +502,9 @@
 
             // Helper function to poll for async results
             const pollForResult = async (requestId, maxAttempts = 30, interval = 2000) => {
-                const API_BASE_URL = 'http://localhost:8001';
+                const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                 
                 for (let attempt = 0; attempt < maxAttempts; attempt++) {
                     try {
@@ -565,9 +567,9 @@
             const handleLogin = async (email, password) => {
                 setIsAuthenticating(true);
                 try {
-                    const API_BASE_URL = window.location.hostname === 'localhost' 
-                        ? 'http://localhost:8001' 
-                        : 'https://your-laravel-api.herokuapp.com'; // Replace with your backend URL
+                                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                         method: 'POST',
                         headers: {
@@ -601,9 +603,9 @@
             const handleRegister = async (email, password, name) => {
                 setIsAuthenticating(true);
                 try {
-                    const API_BASE_URL = window.location.hostname === 'localhost' 
-                        ? 'http://localhost:8001' 
-                        : 'https://your-laravel-api.herokuapp.com'; // Replace with your backend URL
+                                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                     const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
                         method: 'POST',
                         headers: {
@@ -652,9 +654,9 @@
 
             const testConnection = async () => {
                 try {
-                    const API_BASE_URL = window.location.hostname === 'localhost' 
-                        ? 'http://localhost:8001' 
-                        : 'https://your-laravel-api.herokuapp.com'; // Replace with your backend URL
+                                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                     console.log('Testing connection to:', `${API_BASE_URL}/api/fal/test`);
                     
                     const response = await fetch(`${API_BASE_URL}/api/fal/test`);
@@ -670,9 +672,9 @@
 
             const testSupabase = async () => {
                 try {
-                    const API_BASE_URL = window.location.hostname === 'localhost' 
-                        ? 'http://localhost:8001' 
-                        : 'https://your-laravel-api.herokuapp.com'; // Replace with your backend URL
+                                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                     console.log('Testing Supabase configuration...');
                     
                     const response = await fetch(`${API_BASE_URL}/api/auth/test-supabase`);
@@ -690,9 +692,9 @@
             const loadStylesAndColors = async () => {
                 setLoadingStyles(true);
                 try {
-                    const API_BASE_URL = window.location.hostname === 'localhost' 
-                        ? 'http://localhost:8001' 
-                        : 'https://your-laravel-api.herokuapp.com'; // Replace with your backend URL
+                                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                     const isPremium = userProfile?.is_premium || false;
                     
                     // Load styles
@@ -747,9 +749,9 @@
                 setIsProcessingPayment(true);
                 
                 try {
-                    const API_BASE_URL = window.location.hostname === 'localhost' 
-                        ? 'http://localhost:8001' 
-                        : 'https://your-laravel-api.herokuapp.com'; // Replace with your backend URL
+                                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8001' 
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                     
                     // Create Stripe checkout session
                     const response = await fetch(`${API_BASE_URL}/api/payments/create-checkout-session`, {
