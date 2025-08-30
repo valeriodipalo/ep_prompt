@@ -77,6 +77,47 @@ Route::prefix('auth')->group(function () {
             'timestamp' => now()
         ]);
     });
+    
+    // Test token update directly in Supabase
+    Route::post('/test-token-update', function(Request $request) {
+        try {
+            $request->validate([
+                'user_email' => 'required|email',
+                'tokens' => 'required|integer'
+            ]);
+            
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseServiceKey = env('SUPABASE_SERVICE_KEY');
+            
+            if (!$supabaseUrl || !$supabaseServiceKey) {
+                return response()->json(['error' => 'Supabase not configured'], 500);
+            }
+            
+            // Test direct token update
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $supabaseServiceKey,
+                'Content-Type' => 'application/json',
+                'apikey' => $supabaseServiceKey,
+                'Prefer' => 'return=minimal'
+            ])->patch($supabaseUrl . '/rest/v1/user_profiles?email=eq.' . $request->user_email, [
+                'tokens_remaining' => $request->tokens,
+                'updated_at' => now()->toISOString()
+            ]);
+            
+            return response()->json([
+                'success' => $response->successful(),
+                'status_code' => $response->status(),
+                'response_body' => $response->body(),
+                'tokens_set' => $request->tokens,
+                'user_email' => $request->user_email
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Token update test failed: ' . $e->getMessage()
+            ], 500);
+        }
+    });
 });
 
 // Payment routes (public for webhooks, but most require auth)
