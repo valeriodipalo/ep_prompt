@@ -1515,6 +1515,103 @@
                                     </div>
                                 </div>
                                 
+                                {/* Payment Testing Buttons - Visible Section */}
+                                <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mt-4">
+                                    <h4 className="text-md font-semibold text-purple-800 mb-3 text-center">💳 Payment Testing</h4>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        <button
+                                            onClick={async () => {
+                                                if (!user?.email && !userProfile?.email) {
+                                                    alert('Please login first to test payment');
+                                                    return;
+                                                }
+                                                
+                                                const API_BASE_URL = window.location.hostname === 'localhost' 
+                                                    ? 'http://localhost:8001' 
+                                                    : 'https://web-production-5e40.up.railway.app';
+                                                
+                                                console.log('🔍 DEBUG: Testing upgrade for user:', user?.email || userProfile?.email);
+                                                
+                                                try {
+                                                    const response = await fetch(`${API_BASE_URL}/api/payments/debug-upgrade`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            user_email: user?.email || userProfile?.email,
+                                                            package: 'creator'
+                                                        })
+                                                    });
+                                                    
+                                                    const result = await response.json();
+                                                    console.log('🔍 DEBUG: Manual upgrade result:', result);
+                                                    alert(result.success ? '✅ Debug upgrade successful! Check your token count.' : '❌ Debug upgrade failed: ' + result.error);
+                                                    
+                                                    if (result.success) {
+                                                        setTimeout(() => {
+                                                            checkPaymentStatus();
+                                                        }, 1000);
+                                                    }
+                                                } catch (error) {
+                                                    console.error('❌ DEBUG: Manual upgrade error:', error);
+                                                    alert('❌ Debug upgrade failed: ' + error.message);
+                                                }
+                                            }}
+                                            className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                                        >
+                                            💎 Test Upgrade (Creator Package)
+                                        </button>
+                                        
+                                        <button
+                                            onClick={async () => {
+                                                if (!user?.email && !userProfile?.email) {
+                                                    alert('Please login first to test tokens');
+                                                    return;
+                                                }
+                                                
+                                                const API_BASE_URL = window.location.hostname === 'localhost' 
+                                                    ? 'http://localhost:8001' 
+                                                    : 'https://web-production-5e40.up.railway.app';
+                                                
+                                                console.log('🔍 DEBUG: Testing token update for user:', user?.email || userProfile?.email);
+                                                
+                                                try {
+                                                    const response = await fetch(`${API_BASE_URL}/api/auth/test-token-update`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            user_email: user?.email || userProfile?.email,
+                                                            tokens: 100
+                                                        })
+                                                    });
+                                                    
+                                                    const result = await response.json();
+                                                    console.log('🔍 DEBUG: Token update result:', result);
+                                                    alert(result.success ? '✅ Tokens updated to 100! Refresh to see changes.' : '❌ Token update failed: ' + result.error);
+                                                    
+                                                    if (result.success) {
+                                                        setTimeout(() => {
+                                                            checkPaymentStatus();
+                                                        }, 1000);
+                                                    }
+                                                } catch (error) {
+                                                    console.error('❌ DEBUG: Token update error:', error);
+                                                    alert('❌ Token update failed: ' + error.message);
+                                                }
+                                            }}
+                                            className="w-full px-4 py-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                                        >
+                                            🪙 Test Token Update (100 tokens)
+                                        </button>
+                                        
+                                        <button
+                                            onClick={checkPaymentStatus}
+                                            className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                                        >
+                                            🔄 Refresh Profile & Tokens
+                                        </button>
+                                    </div>
+                                </div>
+                                
                                 {/* Payment Testing Section */}
                                 <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mt-4">
                                     <h4 className="text-md font-semibold text-purple-800 mb-3">💳 Payment Testing</h4>
