@@ -156,13 +156,28 @@
                         const authData = JSON.parse(storedAuth);
                         console.log('✅ Found stored authentication:', authData);
                         
-                        // Set user as authenticated
-                        setUser({
-                            id: 'authenticated-user', // We'll get real user data from the token
-                            email: 'confirmed-user'
-                        });
+                        // Check if we have complete user data from auto-login
+                        if (authData.user && authData.profile) {
+                            // Full auto-login with profile data
+                            setUser(authData.user);
+                            setUserProfile(authData.profile);
+                            console.log('✅ Auto-login with full profile:', authData.profile);
+                            
+                            if (urlParams.get('auto_login') === 'true') {
+                                alert('🎉 Welcome! Your email has been confirmed and you\'re now logged in. You have 10 free transformations to get started!');
+                            }
+                        } else {
+                            // Legacy auth data or incomplete - fetch profile
+                            setUser({
+                                id: 'authenticated-user',
+                                email: 'confirmed-user'
+                            });
+                            
+                            // Try to fetch complete profile
+                            fetchUserProfile(authData.access_token);
+                        }
                         
-                        if (urlParams.get('auth') === 'confirmed') {
+                        if (urlParams.get('auth') === 'confirmed' && !urlParams.get('auto_login')) {
                             alert('Welcome back! Your email has been confirmed and you can now generate hairstyles.');
                         }
                     } catch (error) {
@@ -171,6 +186,41 @@
                     }
                 }
             }, []);
+
+            // Fetch user profile using access token
+            const fetchUserProfile = async (accessToken) => {
+                try {
+                    const API_BASE_URL = window.location.hostname === 'localhost' 
+                        ? 'http://localhost:8001' 
+                        : 'https://web-production-5e40.up.railway.app';
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        setUser(data.user);
+                        setUserProfile(data.profile);
+                        console.log('✅ Profile fetched successfully:', data.profile);
+                        
+                        // Update localStorage with complete data
+                        const storedAuth = JSON.parse(localStorage.getItem('supabase_auth') || '{}');
+                        localStorage.setItem('supabase_auth', JSON.stringify({
+                            ...storedAuth,
+                            user: data.user,
+                            profile: data.profile
+                        }));
+                    } else {
+                        console.error('Failed to fetch user profile');
+                    }
+                } catch (error) {
+                    console.error('Error fetching user profile:', error);
+                }
+            };
 
             // Rotate loading messages every 2 seconds
             React.useEffect(() => {
