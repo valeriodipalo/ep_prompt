@@ -585,14 +585,26 @@ const handleAccentedSelect = (accentedColor) => {
 
 ### **Generation Validation**
 ```javascript
-// Pre-generation validation
-const canGenerate = selectedStyle && 
-  (colorChoice.type === 'single-tone' ? colorChoice.singleTone : colorChoice.accented) &&
-  uploadedImage;
+// Pre-generation validation (simplified)
+const canGenerate = selectedStyle && uploadedImage;
 
+// Color selection is optional - users can generate with just hairstyle
 // Generation button state
 disabled={!canGenerate || isGenerating}
+
+// Button condition in UI
+{selectedStyle && (
+  <button onClick={checkAuthAndProceed} disabled={isGenerating}>
+    Generate Your New Hairstyle
+  </button>
+)}
 ```
+
+#### **Validation Rules:**
+- ✅ **Hairstyle**: Required (shows validation toast if missing)
+- ✅ **Image**: Required (handled by upload flow)
+- ✅ **Color**: Optional (users can generate without color changes)
+- ✅ **Authentication**: Required for non-test mode
 
 ### **Premium Access Control**
 ```javascript
@@ -728,6 +740,7 @@ const showWelcome = (userData, profileData, isNewUser = false) => {
 - ✅ **Professional Design**: Gradient backgrounds and smooth animations
 - ✅ **Auto-dismiss**: Banner auto-hides after 8 seconds
 - ✅ **Celebration Icon**: Beautiful gradient icon with professional styling
+- ✅ **Selective Display**: Only shows for first-time users (email confirmation), not regular logins
 
 #### **Improved Error Notifications**
 ```javascript
