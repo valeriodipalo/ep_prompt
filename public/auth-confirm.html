@@ -59,11 +59,13 @@
                     confirmed_at: new Date().toISOString()
                 }));
                 
-                // Redirect to widget
-                window.location.href = '/styleai-widget.html?auth=confirmed';
+                // Redirect to widget (production-aware)
+                const baseUrl = window.location.origin;
+                window.location.href = `${baseUrl}/styleai-widget.html?auth=confirmed`;
             } else {
-                // No tokens found, just redirect
-                window.location.href = '/styleai-widget.html';
+                // No tokens found, just redirect (production-aware)
+                const baseUrl = window.location.origin;
+                window.location.href = `${baseUrl}/styleai-widget.html`;
             }
         }
 
