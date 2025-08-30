@@ -35,11 +35,47 @@ Vite Dev Server: http://localhost:5173
 
 ## 🎯 **CORE FEATURES & IMPLEMENTATION**
 
-### **1. Freemium Model**
+### **1. Three-Tier Pricing Model**
+
+#### **Free Tier**
+- **2 Free Generations**: Reduced from 10 to encourage conversion
 - **Basic Hairstyles**: Free access (Classic Bob, Beach Waves, Straight Hair)
-- **Premium Hairstyles**: Locked for paying customers (Curly Afro, Vintage Hollywood, etc.)
 - **Single-Tone Colors**: Free access
-- **Accented Colors**: Premium feature with advanced controls
+- **Premium Features**: Locked with upgrade prompts
+
+#### **Paid Packages**
+```javascript
+// Three pricing tiers
+const packages = {
+  starter: {
+    name: 'StyleAI Starter',
+    price: 2.49,
+    generations: 3,
+    features: ['Premium Styles', 'Premium Colors'],
+    description: 'Perfect for trying premium features'
+  },
+  creator: {
+    name: 'StyleAI Creator', 
+    price: 4.49,
+    generations: 10,
+    features: ['Premium Styles', 'Premium Colors'],
+    description: 'Great for regular styling needs',
+    popular: true
+  },
+  salon: {
+    name: 'StyleAI Salon Package',
+    price: 19.99,
+    generations: 100,
+    features: ['Premium Styles', 'Premium Colors', 'White Labeling', 'Custom Integration Support'],
+    description: 'Professional salon solution'
+  }
+};
+```
+
+#### **Package Features**
+- **Starter ($2.49)**: 3 generations + premium access
+- **Creator ($4.49)**: 10 generations + premium access (MOST POPULAR)
+- **Salon ($19.99)**: 100 generations + premium + white labeling + custom integration
 
 ### **2. Color System Architecture**
 
@@ -178,9 +214,10 @@ GET  /api/fal/get-result             - Get transformation result
 
 ### **Payments (Stripe)**
 ```
-POST /api/payments/create-checkout-session - Create payment session
+POST /api/payments/create-checkout-session - Create payment session (requires package parameter)
 GET  /api/payments/status                  - Check payment status
 POST /api/payments/webhook                 - Stripe webhook handler
+GET  /api/payments/packages                - Get available pricing packages
 ```
 
 ### **Content Management**
