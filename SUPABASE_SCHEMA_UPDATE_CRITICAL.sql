@@ -1,5 +1,16 @@
 -- ===================================
 -- CRITICAL SUPABASE SCHEMA UPDATE FOR PAYMENT SYSTEM
+-- 
+-- PROJECT OWNER: vale98.apple@gmail.com
+-- PROJECT URL: https://nxxznqnrxomzudghktrz.supabase.co
+-- PROJECT ID: nxxznqnrxomzudghktrz
+-- 
+-- INSTRUCTIONS:
+-- 1. Login to Supabase with vale98.apple@gmail.com
+-- 2. Go to https://supabase.com/dashboard/project/nxxznqnrxomzudghktrz/sql
+-- 3. Copy and paste these SQL commands
+-- 4. Click "Run" to execute
+-- 
 -- Run these commands in your Supabase SQL Editor
 -- ===================================
 

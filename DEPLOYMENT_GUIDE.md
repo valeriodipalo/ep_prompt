@@ -114,7 +114,7 @@ APP_KEY=base64:your-app-key-here
 APP_DEBUG=false
 APP_URL=https://your-domain.vercel.app
 
-# Supabase
+# Supabase (Project Owner: vale98.apple@gmail.com)
 SUPABASE_URL=https://nxxznqnrxomzudghktrz.supabase.co
 SUPABASE_ANON_KEY=your-supabase-anon-key
 SUPABASE_SERVICE_KEY=your-supabase-service-key

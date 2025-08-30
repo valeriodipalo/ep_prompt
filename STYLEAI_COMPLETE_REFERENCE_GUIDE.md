@@ -24,6 +24,13 @@ Health Check: https://web-production-5e40.up.railway.app/api/health
 Webhook Test: https://web-production-5e40.up.railway.app/api/payments/webhook-test
 ```
 
+### **Database Information**
+```
+Supabase Project Owner: vale98.apple@gmail.com
+Supabase URL: https://nxxznqnrxomzudghktrz.supabase.co
+Project ID: nxxznqnrxomzudghktrz
+```
+
 ### **Local Development URLs**
 ```
 Frontend: http://localhost:8080/styleai-widget.html
@@ -1072,6 +1079,9 @@ const transformationEndpoints = [
 
 ## 📊 **DATABASE SCHEMA (Supabase)**
 
+**⚠️ IMPORTANT**: Database is owned by `vale98.apple@gmail.com` account  
+**Access**: https://supabase.com/dashboard/project/nxxznqnrxomzudghktrz
+
 ### **user_profiles Table**
 ```sql
 CREATE TABLE user_profiles (
@@ -1079,9 +1089,13 @@ CREATE TABLE user_profiles (
   email VARCHAR UNIQUE NOT NULL,
   name VARCHAR,
   is_premium BOOLEAN DEFAULT FALSE,
-  tokens_remaining INTEGER DEFAULT 3,
-  upgraded_at TIMESTAMP,
-  created_at TIMESTAMP DEFAULT NOW()
+  current_package TEXT,
+  generations_remaining INTEGER DEFAULT 2,
+  tokens_remaining INTEGER DEFAULT 10,
+  package_purchased_at TIMESTAMP,
+  free_transformations_used INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 ```
 
@@ -1091,6 +1105,8 @@ CREATE TABLE payments (
   id UUID PRIMARY KEY,
   user_id UUID REFERENCES user_profiles(id),
   stripe_session_id VARCHAR UNIQUE,
+  package_type TEXT,
+  generations_purchased INTEGER,
   amount INTEGER,
   currency VARCHAR DEFAULT 'usd',
   status VARCHAR DEFAULT 'pending',
