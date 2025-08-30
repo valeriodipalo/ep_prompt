@@ -31,27 +31,33 @@ class StripePaymentController extends Controller
                 ], 500);
             }
 
-            // Define pricing packages
+            // Define pricing packages with your Stripe product IDs
             $packages = [
                 'starter' => [
+                    'stripe_product_id' => 'prod_SxnNZ076SWbgPv',
                     'name' => 'StyleAI Starter',
                     'description' => '3 generations + unlock premium styles and colors',
                     'price' => 249, // $2.49 in cents
                     'generations' => 3,
+                    'tokens' => 15,
                     'features' => ['Premium Styles', 'Premium Colors']
                 ],
                 'creator' => [
+                    'stripe_product_id' => 'prod_Sxky4xnizZyXAB',
                     'name' => 'StyleAI Creator',
                     'description' => '10 generations + premium styles and colors',
                     'price' => 449, // $4.49 in cents
                     'generations' => 10,
+                    'tokens' => 50,
                     'features' => ['Premium Styles', 'Premium Colors']
                 ],
                 'salon' => [
+                    'stripe_product_id' => 'prod_Sxkzq5isxfAN6Y',
                     'name' => 'StyleAI Salon Package',
-                    'description' => '100 generations + premium features + white labeling + custom integration',
+                    'description' => '80 generations + premium features + white labeling + custom integration',
                     'price' => 1999, // $19.99 in cents
-                    'generations' => 100,
+                    'generations' => 80,
+                    'tokens' => 400,
                     'features' => ['Premium Styles', 'Premium Colors', 'White Labeling', 'Custom Integration Support']
                 ]
             ];
@@ -68,8 +74,7 @@ class StripePaymentController extends Controller
             ])->asForm()->post('https://api.stripe.com/v1/checkout/sessions', [
                 'payment_method_types[0]' => 'card',
                 'line_items[0][price_data][currency]' => 'usd',
-                'line_items[0][price_data][product_data][name]' => $selectedPackage['name'],
-                'line_items[0][price_data][product_data][description]' => $selectedPackage['description'],
+                'line_items[0][price_data][product]' => $selectedPackage['stripe_product_id'],
                 'line_items[0][price_data][unit_amount]' => $selectedPackage['price'],
                 'line_items[0][quantity]' => 1,
                 'mode' => 'payment',
@@ -79,6 +84,8 @@ class StripePaymentController extends Controller
                 'metadata[user_id]' => $request->user_id,
                 'metadata[package]' => $request->package,
                 'metadata[generations]' => $selectedPackage['generations'],
+                'metadata[tokens]' => $selectedPackage['tokens'],
+                'metadata[stripe_product_id]' => $selectedPackage['stripe_product_id'],
             ]);
 
             if ($response->successful()) {
@@ -211,17 +218,17 @@ class StripePaymentController extends Controller
             }
 
             // Update user profile with package data
-            $isPremium = in_array($package, ['creator', 'salon']); // Starter gets premium features but not unlimited
-            
+            // All packages get premium access to styles/colors, but different generation limits
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $supabaseServiceKey,
                 'Content-Type' => 'application/json',
                 'apikey' => $supabaseServiceKey
             ])->patch($supabaseUrl . '/rest/v1/user_profiles', [
-                'is_premium' => $isPremium,
+                'is_premium' => true, // All paid packages get premium access
                 'current_package' => $package,
                 'generations_remaining' => $generations,
-                'package_purchased_at' => now()->toISOString()
+                'package_purchased_at' => now()->toISOString(),
+                'tokens_remaining' => $this->getTokensForPackage($package)
             ], [
                 'email' => 'eq.' . $userEmail
             ]);
@@ -305,5 +312,19 @@ class StripePaymentController extends Controller
                 'error' => 'Status check failed: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Get token count for package
+     */
+    private function getTokensForPackage(string $package): int
+    {
+        $tokenMap = [
+            'starter' => 15,  // 3 generations × 5 tokens
+            'creator' => 50,  // 10 generations × 5 tokens  
+            'salon' => 400    // 80 generations × 5 tokens
+        ];
+        
+        return $tokenMap[$package] ?? 0;
     }
 }

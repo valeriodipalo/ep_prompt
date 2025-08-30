@@ -92,27 +92,33 @@ Route::prefix('payments')->group(function () {
             'packages' => [
                 'starter' => [
                     'id' => 'starter',
+                    'stripe_product_id' => 'prod_SxnNZ076SWbgPv',
                     'name' => 'StyleAI Starter',
                     'price' => 2.49,
                     'generations' => 3,
+                    'tokens' => 15,
                     'features' => ['Premium Styles', 'Premium Colors'],
                     'description' => 'Perfect for trying premium features',
                     'popular' => false
                 ],
                 'creator' => [
                     'id' => 'creator',
+                    'stripe_product_id' => 'prod_Sxky4xnizZyXAB',
                     'name' => 'StyleAI Creator',
                     'price' => 4.49,
                     'generations' => 10,
+                    'tokens' => 50,
                     'features' => ['Premium Styles', 'Premium Colors'],
                     'description' => 'Great for regular styling needs',
                     'popular' => true
                 ],
                 'salon' => [
                     'id' => 'salon',
+                    'stripe_product_id' => 'prod_Sxkzq5isxfAN6Y',
                     'name' => 'StyleAI Salon Package',
                     'price' => 19.99,
-                    'generations' => 100,
+                    'generations' => 80,
+                    'tokens' => 400,
                     'features' => ['Premium Styles', 'Premium Colors', 'White Labeling', 'Custom Integration Support'],
                     'description' => 'Professional salon solution',
                     'popular' => false
