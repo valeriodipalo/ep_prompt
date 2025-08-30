@@ -43,29 +43,38 @@ Vite Dev Server: http://localhost:5173
 - **Single-Tone Colors**: Free access
 - **Premium Features**: Locked with upgrade prompts
 
-#### **Paid Packages**
+#### **Paid Packages with Stripe Integration**
 ```javascript
-// Three pricing tiers
+// Three pricing tiers with Stripe product IDs
 const packages = {
   starter: {
+    id: 'starter',
+    stripe_product_id: 'prod_SxnNZ076SWbgPv',
     name: 'StyleAI Starter',
     price: 2.49,
     generations: 3,
+    tokens: 15,
     features: ['Premium Styles', 'Premium Colors'],
     description: 'Perfect for trying premium features'
   },
   creator: {
+    id: 'creator',
+    stripe_product_id: 'prod_Sxky4xnizZyXAB',
     name: 'StyleAI Creator', 
     price: 4.49,
     generations: 10,
+    tokens: 50,
     features: ['Premium Styles', 'Premium Colors'],
     description: 'Great for regular styling needs',
     popular: true
   },
   salon: {
+    id: 'salon',
+    stripe_product_id: 'prod_Sxkzq5isxfAN6Y',
     name: 'StyleAI Salon Package',
     price: 19.99,
-    generations: 100,
+    generations: 80,
+    tokens: 400,
     features: ['Premium Styles', 'Premium Colors', 'White Labeling', 'Custom Integration Support'],
     description: 'Professional salon solution'
   }
@@ -73,9 +82,51 @@ const packages = {
 ```
 
 #### **Package Features**
-- **Starter ($2.49)**: 3 generations + premium access
-- **Creator ($4.49)**: 10 generations + premium access (MOST POPULAR)
-- **Salon ($19.99)**: 100 generations + premium + white labeling + custom integration
+- **Starter ($2.49)**: 3 generations (15 tokens) + premium access
+- **Creator ($4.49)**: 10 generations (50 tokens) + premium access (MOST POPULAR)
+- **Salon ($19.99)**: 80 generations (400 tokens) + premium + white labeling + custom integration
+
+#### **Stripe Product Integration**
+- ✅ **Pre-created Products**: Uses your existing Stripe product IDs
+- ✅ **Dynamic Pricing**: Prices set via product configuration
+- ✅ **Metadata Tracking**: Package type, generations, and tokens stored in Stripe metadata
+- ✅ **Webhook Processing**: Automatic user upgrade based on purchased package
+
+#### **Professional Pricing Modal**
+```javascript
+// Three-tier pricing modal with interactive selection
+{showPaymentModal && pricingPackages && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-2xl p-8 w-full max-w-5xl">
+      <div className="grid md:grid-cols-3 gap-6">
+        {Object.values(pricingPackages).map((pkg) => (
+          <div 
+            key={pkg.id}
+            className={`relative rounded-2xl border-2 p-6 cursor-pointer transition-all ${
+              selectedPackage === pkg.id 
+                ? 'border-purple-500 bg-purple-50 shadow-xl scale-105' 
+                : 'border-gray-200 hover:border-purple-300 hover:shadow-lg'
+            }`}
+            onClick={() => setSelectedPackage(pkg.id)}
+          >
+            {/* Package content */}
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
+```
+
+#### **Pricing Modal Features:**
+- ✅ **Interactive Cards**: Click to select, visual feedback on selection
+- ✅ **Popular Badge**: "MOST POPULAR" badge on Creator package
+- ✅ **Professional Design**: Large modal with 3-column grid layout
+- ✅ **Feature Lists**: Clear feature breakdown for each package
+- ✅ **Token Display**: Shows both generations and token counts
+- ✅ **Dynamic Button**: Updates price based on selected package
+- ✅ **Hover Effects**: Smooth animations and scale transforms
+- ✅ **Responsive**: Adapts to mobile with stacked layout
 
 ### **2. Color System Architecture**
 
@@ -279,6 +330,16 @@ GET /api/styles/subscription-plans - Get pricing plans
     <!-- - Password visibility toggles -->
     <!-- - Real-time validation feedback -->
     <!-- - Professional styling -->
+  </div>
+  
+  <!-- Three-Tier Pricing Modal -->
+  <div class="pricing-modal">
+    <!-- Professional pricing cards with: -->
+    <!-- - Starter ($2.49): 3 generations + premium features -->
+    <!-- - Creator ($4.49): 10 generations + premium features (POPULAR) -->
+    <!-- - Salon ($19.99): 80 generations + premium + white labeling -->
+    <!-- - Interactive selection with hover effects -->
+    <!-- - Stripe integration with product IDs -->
   </div>
 </div>
 ```
