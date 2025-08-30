@@ -696,6 +696,67 @@ async function goToWidget() {
 - ✅ **Token Management**: Secure storage of authentication tokens
 - ✅ **Fallback Handling**: Graceful degradation if profile fetch fails
 
+#### **Beautiful Welcome Banner System**
+```javascript
+// Welcome banner with confetti animation
+const showWelcome = (userData, profileData, isNewUser = false) => {
+  const tokensRemaining = profileData?.tokens_remaining || 10;
+  const userName = userData?.name || profileData?.name || 'Stylist';
+  
+  setWelcomeData({
+    name: userName,
+    tokens: tokensRemaining,
+    isNewUser: isNewUser,
+    isPremium: profileData?.is_premium || false
+  });
+  
+  setShowWelcomeBanner(true);
+  setShowConfetti(true);
+  
+  // Hide confetti after 3 seconds
+  setTimeout(() => setShowConfetti(false), 3000);
+  
+  // Auto-hide banner after 8 seconds
+  setTimeout(() => setShowWelcomeBanner(false), 8000);
+};
+```
+
+#### **Welcome Banner Features:**
+- ✅ **Confetti Animation**: 50 colorful particles falling with CSS animations
+- ✅ **Personalized Greeting**: Uses actual user name and token count
+- ✅ **Premium Upsell**: "Unlock All Premium Features" button for free users
+- ✅ **Professional Design**: Gradient backgrounds and smooth animations
+- ✅ **Auto-dismiss**: Banner auto-hides after 8 seconds
+- ✅ **Celebration Icon**: Beautiful gradient icon with professional styling
+
+#### **Improved Error Notifications**
+```javascript
+// Subtle toast notifications instead of alerts
+const showNotification = (message, type = 'error') => {
+  const notification = document.createElement('div');
+  notification.className = `fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 ${
+    type === 'error' ? 'bg-red-100 border border-red-300 text-red-700' :
+    type === 'warning' ? 'bg-orange-100 border border-orange-300 text-orange-700' :
+    'bg-green-100 border border-green-300 text-green-700'
+  }`;
+  notification.innerHTML = message;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.parentNode.removeChild(notification);
+    }
+  }, 3000);
+};
+```
+
+#### **Error Notification Features:**
+- ✅ **Non-intrusive**: Toast notifications instead of blocking alerts
+- ✅ **Auto-dismiss**: Disappear after 3 seconds
+- ✅ **Color-coded**: Red for errors, orange for warnings
+- ✅ **Professional Styling**: Consistent with app design
+- ✅ **Better UX**: Users can continue using the app while seeing the message
+
 ### **Supabase Authentication Flow**
 ```javascript
 // Registration
