@@ -161,6 +161,45 @@ const refreshUserProfileAfterPayment = async () => {
 - ✅ **Seamless UX**: User stays logged in and ready to use features
 - ✅ **URL Cleanup**: Removes payment parameters from URL after success
 
+#### **Payment Flow Fixes**
+```javascript
+// Open Stripe in new tab to preserve login state
+if (response.ok && result.checkout_url) {
+  window.open(result.checkout_url, '_blank'); // New tab
+  
+  // Show notification about new tab
+  showNotification('💳 Payment page opened in new tab. Complete your purchase there!');
+  
+  // Close payment modal
+  setShowPaymentModal(false);
+}
+```
+
+#### **Supabase Token Assignment Fix**
+```php
+// Robust user profile update with fallback
+$updateData = [
+  'is_premium' => true,
+  'current_package' => $package,
+  'generations_remaining' => $generations,
+  'tokens_remaining' => $this->getTokensForPackage($package)
+];
+
+// Try user ID first, then email as fallback
+$response = Http::patch($supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId, $updateData);
+
+if (!$response->successful()) {
+  $response = Http::patch($supabaseUrl . '/rest/v1/user_profiles?email=eq.' . $userEmail, $updateData);
+}
+```
+
+#### **Payment Flow Improvements:**
+- ✅ **Preserve Login**: Stripe opens in new tab, user stays logged in
+- ✅ **Manual Check**: "Check Payment Status" button in user menu
+- ✅ **Robust Updates**: Dual fallback for Supabase user updates
+- ✅ **Better Logging**: Detailed logs for webhook processing
+- ✅ **Error Handling**: Graceful fallback if user ID update fails
+
 ### **2. Color System Architecture**
 
 #### **Single-Tone Colors (Free)**
