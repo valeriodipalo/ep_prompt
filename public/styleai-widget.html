@@ -1420,7 +1420,7 @@
                                     <div className="text-sm text-yellow-700">Test API connections and simulate user states</div>
                                 </div>
                                 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                                     <button
                                         onClick={testConnection}
                                         className="px-4 py-3 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
@@ -1512,6 +1512,88 @@
                                 <div className="mt-4 text-center">
                                     <div className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
                                         ✅ Authentication Bypassed - Generate Without Login
+                                    </div>
+                                </div>
+                                
+                                {/* Payment Testing Section */}
+                                <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mt-4">
+                                    <h4 className="text-md font-semibold text-purple-800 mb-3">💳 Payment Testing</h4>
+                                    <div className="space-y-2">
+                                        <button
+                                            onClick={async () => {
+                                                if (!user?.email) {
+                                                    alert('Please login first');
+                                                    return;
+                                                }
+                                                
+                                                const API_BASE_URL = window.location.hostname === 'localhost' 
+                                                    ? 'http://localhost:8001' 
+                                                    : 'https://web-production-5e40.up.railway.app';
+                                                
+                                                try {
+                                                    const response = await fetch(`${API_BASE_URL}/api/payments/debug-upgrade`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            user_email: user.email || userProfile?.email,
+                                                            package: 'creator'
+                                                        })
+                                                    });
+                                                    
+                                                    const result = await response.json();
+                                                    console.log('🔍 DEBUG: Manual upgrade result:', result);
+                                                    alert(result.success ? '✅ Debug upgrade successful!' : '❌ Debug upgrade failed: ' + result.error);
+                                                    
+                                                    if (result.success) {
+                                                        await checkPaymentStatus();
+                                                    }
+                                                } catch (error) {
+                                                    console.error('❌ DEBUG: Manual upgrade error:', error);
+                                                    alert('❌ Debug upgrade failed: ' + error.message);
+                                                }
+                                            }}
+                                            className="w-full px-4 py-3 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors"
+                                        >
+                                            💎 Test Upgrade (Creator Package)
+                                        </button>
+                                        
+                                        <button
+                                            onClick={async () => {
+                                                if (!user?.email) {
+                                                    alert('Please login first');
+                                                    return;
+                                                }
+                                                
+                                                const API_BASE_URL = window.location.hostname === 'localhost' 
+                                                    ? 'http://localhost:8001' 
+                                                    : 'https://web-production-5e40.up.railway.app';
+                                                
+                                                try {
+                                                    const response = await fetch(`${API_BASE_URL}/api/auth/test-token-update`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            user_email: user.email || userProfile?.email,
+                                                            tokens: 100
+                                                        })
+                                                    });
+                                                    
+                                                    const result = await response.json();
+                                                    console.log('🔍 DEBUG: Token update result:', result);
+                                                    alert(result.success ? '✅ Tokens updated!' : '❌ Token update failed: ' + result.error);
+                                                    
+                                                    if (result.success) {
+                                                        await checkPaymentStatus();
+                                                    }
+                                                } catch (error) {
+                                                    console.error('❌ DEBUG: Token update error:', error);
+                                                    alert('❌ Token update failed: ' + error.message);
+                                                }
+                                            }}
+                                            className="w-full px-4 py-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
+                                        >
+                                            🪙 Test Token Update (100 tokens)
+                                        </button>
                                     </div>
                                 </div>
                             </div>
