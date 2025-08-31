@@ -665,32 +665,48 @@
                         if (!tokenCheckResponse.ok) {
                             const errorText = await tokenCheckResponse.text();
                             console.error('❌ Token check failed with status:', tokenCheckResponse.status, 'Response:', errorText);
-                            throw new Error(`Token check failed: ${tokenCheckResponse.status} - ${errorText}`);
-                        }
+                            
+                            // TEMPORARY FALLBACK: If backend endpoint not available, use local userProfile data
+                            if (tokenCheckResponse.status === 404) {
+                                console.log('🔄 FALLBACK: Using local userProfile data for token check');
+                                const localTokens = userProfile?.tokens_remaining || 0;
+                                
+                                if (localTokens < 5) {
+                                    showToast(`Insufficient tokens! You need 5 tokens per generation. Current balance: ${localTokens}`, 'error');
+                                    setShowPaymentModal(true);
+                                    return;
+                                }
+                                
+                                console.log('✅ FALLBACK: Sufficient tokens available:', localTokens);
+                                // Continue with generation
+                            } else {
+                                throw new Error(`Token check failed: ${tokenCheckResponse.status} - ${errorText}`);
+                            }
+                        } else {
+                            const tokenData = await tokenCheckResponse.json();
                         
-                        const tokenData = await tokenCheckResponse.json();
-                        
-                        if (!tokenData.success) {
-                            throw new Error('Failed to check token balance');
-                        }
-                        
-                        console.log('🔍 DEBUG: Current token balance:', tokenData);
-                        
-                        // Check if user has enough tokens (5 tokens per generation)
-                        if (tokenData.tokens_remaining < 5) {
-                            showToast(`Insufficient tokens! You need 5 tokens per generation. Current balance: ${tokenData.tokens_remaining}`, 'error');
-                            // Show pricing modal
-                            setShowPaymentModal(true);
-                            return;
-                        }
-                        
-                        // Update UI with current token count
-                        if (userProfile) {
-                            setUserProfile(prev => ({
-                                ...prev,
-                                tokens_remaining: tokenData.tokens_remaining,
-                                generations_remaining: tokenData.generations_remaining
-                            }));
+                            if (!tokenData.success) {
+                                throw new Error('Failed to check token balance');
+                            }
+                            
+                            console.log('🔍 DEBUG: Current token balance:', tokenData);
+                            
+                            // Check if user has enough tokens (5 tokens per generation)
+                            if (tokenData.tokens_remaining < 5) {
+                                showToast(`Insufficient tokens! You need 5 tokens per generation. Current balance: ${tokenData.tokens_remaining}`, 'error');
+                                // Show pricing modal
+                                setShowPaymentModal(true);
+                                return;
+                            }
+                            
+                            // Update UI with current token count
+                            if (userProfile) {
+                                setUserProfile(prev => ({
+                                    ...prev,
+                                    tokens_remaining: tokenData.tokens_remaining,
+                                    generations_remaining: tokenData.generations_remaining
+                                }));
+                            }
                         }
                     } catch (error) {
                         console.error('❌ Token check failed:', error);
