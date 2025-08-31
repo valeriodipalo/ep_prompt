@@ -270,7 +270,7 @@ Route::prefix('tokens')->group(function () {
             }
 
             $newTokens = $currentTokens - $tokensToDeduct;
-            $newGenerations = max(0, $currentGenerations - 1); // Also deduct 1 generation
+            $newGenerations = max(0, floor($newTokens / 5)); // Calculate generations from tokens (tokens/5)
 
             // Update user tokens in Supabase
             $updateResponse = Http::withHeaders([
@@ -280,7 +280,7 @@ Route::prefix('tokens')->group(function () {
                 'Prefer' => 'return=minimal'
             ])->patch($supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId, [
                 'tokens_remaining' => $newTokens,
-                'generations_remaining' => $newGenerations,
+                'generations_remaining' => $newGenerations, // Keep in sync: tokens/5
                 'updated_at' => now()->toISOString()
             ]);
 
