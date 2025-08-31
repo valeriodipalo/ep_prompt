@@ -629,12 +629,20 @@
                 // Color is optional - users can generate with just hairstyle
                 // No validation needed for color selection
                 
+                // 🔧 DEFINE API_BASE_URL EARLY (needed for token checks)
+                const API_BASE_URL = window.location.hostname === 'localhost'
+                    ? 'http://localhost:8001'
+                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
+                
+                console.log('🔍 DEBUG: Using API_BASE_URL:', API_BASE_URL);
+                
                 // 🎯 CHECK TOKENS BEFORE GENERATION (Skip in test mode)
                 const userId = user?.id || userProfile?.id;
                 if (!isTestMode && userId) {
                     console.log('🔍 DEBUG: Checking token balance before generation');
                     
                     try {
+                        console.log('🔍 DEBUG: Making token balance request to:', `${API_BASE_URL}/api/tokens/balance/${userId}`);
                         const tokenCheckResponse = await fetch(`${API_BASE_URL}/api/tokens/balance/${userId}`);
                         const tokenData = await tokenCheckResponse.json();
                         
@@ -681,11 +689,7 @@
                 });
                 setStep(4); // Go to results page immediately
                 
-                try {
-                                    const API_BASE_URL = window.location.hostname === 'localhost' 
-                    ? 'http://localhost:8001' 
-                    : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
-                    
+                                try {
                     console.log('Starting image transformation...');
                                     console.log('🎨 Style options:', {
                     gender: selectedGender,
