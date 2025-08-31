@@ -474,39 +474,46 @@
                 // NO COLOR CHANGE OPTION
                 { id: 'no-change', name: 'No Color Change', hex: '#f3f4f6', family: 'natural', isPremium: false, isNoChange: true, description: 'Keep original hair color' },
                 
-                // FREE NATURAL COLORS
-                { id: 'jet-black', name: 'Jet Black', hex: '#0A0A0A', family: 'black', isPremium: false, description: 'Deep, rich black' },
-                { id: 'dark-brown', name: 'Dark Brown', hex: '#2F1B14', family: 'brunette', isPremium: false, description: 'Rich, deep brown' },
-                { id: 'medium-brown', name: 'Medium Brown', hex: '#5D4037', family: 'brunette', isPremium: false, description: 'Versatile medium brown' },
-                { id: 'light-brown', name: 'Light Brown', hex: '#8D6E63', family: 'brunette', isPremium: false, description: 'Soft, light brown' },
-                { id: 'golden-blonde', name: 'Golden Blonde', hex: '#DAA520', family: 'blonde', isPremium: false, description: 'Classic golden blonde' },
-                { id: 'auburn', name: 'Auburn', hex: '#A52A2A', family: 'red', isPremium: false, description: 'Classic auburn red' },
-                { id: 'salt-pepper', name: 'Salt & Pepper', hex: '#808080', family: 'gray', isPremium: false, description: 'Natural gray blend' },
-                { id: 'platinum', name: 'Platinum', hex: '#E5E4E2', family: 'platinum', isPremium: false, description: 'Ultra-light platinum' },
+                // NATURAL COLORS (Based on new reference)
+                { id: 'black', name: 'Black', hex: '#0B0B0B', family: 'natural', isPremium: false, description: 'Deepest shade, jet black' },
+                { id: 'dark-brown', name: 'Dark Brown', hex: '#3B2F2F', family: 'natural', isPremium: false, description: 'Very deep brown' },
+                { id: 'chestnut-brown', name: 'Chestnut Brown', hex: '#4E342E', family: 'natural', isPremium: true, description: 'Rich brown with red undertones' },
+                { id: 'medium-brown', name: 'Medium Brown', hex: '#6B4226', family: 'natural', isPremium: false, description: 'Balanced mid-brown' },
+                { id: 'light-brown', name: 'Light Brown', hex: '#8B5A2B', family: 'natural', isPremium: true, description: 'Soft, warm brown' },
                 
-                // PREMIUM COLORS
-                { id: 'honey-blonde', name: 'Honey Blonde', hex: '#D4A574', family: 'blonde', isPremium: true, description: 'Warm honey-toned blonde' },
-                { id: 'ash-blonde', name: 'Ash Blonde', hex: '#C4A484', family: 'blonde', isPremium: true, description: 'Cool-toned ash blonde' },
-                { id: 'chestnut', name: 'Chestnut', hex: '#954535', family: 'brunette', isPremium: true, description: 'Warm reddish-brown' },
-                { id: 'copper', name: 'Copper', hex: '#B87333', family: 'red', isPremium: true, description: 'Bright copper red' },
-                { id: 'rose-gold', name: 'Rose Gold', hex: '#E8B4B8', family: 'fashion', isPremium: true, description: 'Trendy rose gold' },
-                { id: 'silver-gray', name: 'Silver Gray', hex: '#C0C0C0', family: 'gray', isPremium: true, description: 'Elegant silver gray' },
-                { id: 'pastel-pink', name: 'Pastel Pink', hex: '#FFB6C1', family: 'pastel', isPremium: true, description: 'Soft pastel pink' },
-                { id: 'lavender', name: 'Lavender', hex: '#E6E6FA', family: 'pastel', isPremium: true, description: 'Soft lavender purple' },
-                { id: 'electric-blue', name: 'Electric Blue', hex: '#7DF9FF', family: 'vibrant', isPremium: true, description: 'Bold electric blue' },
-                { id: 'neon-green', name: 'Neon Green', hex: '#39FF14', family: 'vibrant', isPremium: true, description: 'Bright neon green' },
-                { id: 'hot-pink', name: 'Hot Pink', hex: '#FF69B4', family: 'vibrant', isPremium: true, description: 'Vibrant hot pink' },
-                { id: 'royal-purple', name: 'Royal Purple', hex: '#7851A9', family: 'vibrant', isPremium: true, description: 'Rich royal purple' }
+                // BLONDE COLORS
+                { id: 'dark-blonde', name: 'Dark Blonde', hex: '#C2A676', family: 'blonde', isPremium: true, description: 'Dirty blonde with brown tones' },
+                { id: 'sandy-blonde', name: 'Sandy Blonde', hex: '#D6C49B', family: 'blonde', isPremium: true, description: 'Neutral blonde with beige undertones' },
+                { id: 'golden-blonde', name: 'Golden Blonde', hex: '#FFD36E', family: 'blonde', isPremium: false, description: 'Warm, sunlit blonde' },
+                { id: 'light-blonde', name: 'Light Blonde', hex: '#F3E2B3', family: 'blonde', isPremium: true, description: 'Pale golden blonde' },
+                { id: 'platinum-blonde', name: 'Platinum Blonde', hex: '#FAF6F0', family: 'blonde', isPremium: true, description: 'Nearly white, icy blonde' },
+                
+                // RED COLORS
+                { id: 'auburn', name: 'Auburn', hex: '#7C0A02', family: 'red', isPremium: true, description: 'Deep reddish-brown' },
+                { id: 'copper-red', name: 'Copper Red', hex: '#B9471E', family: 'red', isPremium: true, description: 'Vivid orange-red' },
+                { id: 'natural-red', name: 'Natural Red', hex: '#D14F1D', family: 'red', isPremium: true, description: 'Classic bright red hair' },
+                { id: 'strawberry-blonde', name: 'Strawberry Blonde', hex: '#E6B87C', family: 'red', isPremium: true, description: 'Blonde with reddish hues' },
+                
+                // GRAY/SILVER COLORS
+                { id: 'gray', name: 'Gray', hex: '#C0C0C0', family: 'gray', isPremium: true, description: 'Silver-gray to white' },
+                { id: 'silver', name: 'Silver', hex: '#AFAFAF', family: 'gray', isPremium: true, description: 'Chrome-like metallic gray' },
+                
+                // CREATIVE COLORS
+                { id: 'blue', name: 'Blue', hex: '#3B82F6', family: 'creative', isPremium: true, description: 'Deep navy to electric blue' },
+                { id: 'green', name: 'Green', hex: '#10B981', family: 'creative', isPremium: true, description: 'Emerald to neon lime' },
+                { id: 'purple', name: 'Purple', hex: '#6B21A8', family: 'creative', isPremium: true, description: 'Violet to lavender' },
+                { id: 'pink', name: 'Pink', hex: '#EC4899', family: 'creative', isPremium: true, description: 'Hot pink to pastel' },
+                { id: 'rainbow', name: 'Rainbow', hex: '#FF6B6B', family: 'creative', isPremium: true, description: 'Multicolor blend' }
             ];
             
             // Color presets for quick selection
             const colorPresets = [
                 { id: 'classic-brunette', label: 'Classic Brunette', choice: { type: 'single-tone', singleTone: { colorId: 'medium-brown' } } },
                 { id: 'golden-goddess', label: 'Golden Goddess', choice: { type: 'single-tone', singleTone: { colorId: 'golden-blonde' } } },
-                { id: 'midnight-black', label: 'Midnight Black', choice: { type: 'single-tone', singleTone: { colorId: 'jet-black' } } },
-                { id: 'honey-balayage', label: 'Honey Balayage', choice: { type: 'accented', accented: { baseColorId: 'medium-brown', accentColorId: 'honey-blonde', technique: 'balayage', intensity: 'standard', placement: 'face-framing', blend: 'soft' } } },
-                { id: 'platinum-highlights', label: 'Platinum Highlights', choice: { type: 'accented', accented: { baseColorId: 'dark-brown', accentColorId: 'platinum', technique: 'highlights', intensity: 'bold', placement: 'overall', blend: 'defined' } } },
-                { id: 'rose-ombre', label: 'Rose Ombré', choice: { type: 'accented', accented: { baseColorId: 'dark-brown', accentColorId: 'rose-gold', technique: 'ombre', intensity: 'bold', placement: 'tips', blend: 'defined' } } }
+                { id: 'midnight-black', label: 'Midnight Black', choice: { type: 'single-tone', singleTone: { colorId: 'black' } } },
+                { id: 'honey-balayage', label: 'Honey Balayage', choice: { type: 'accented', accented: { baseColorId: 'medium-brown', accentColorId: 'golden-blonde', technique: 'balayage', intensity: 'standard', placement: 'face-framing', blend: 'soft' } } },
+                { id: 'platinum-highlights', label: 'Platinum Highlights', choice: { type: 'accented', accented: { baseColorId: 'dark-brown', accentColorId: 'platinum-blonde', technique: 'highlights', intensity: 'bold', placement: 'overall', blend: 'defined' } } },
+                { id: 'rose-ombre', label: 'Rose Ombré', choice: { type: 'accented', accented: { baseColorId: 'dark-brown', accentColorId: 'pink', technique: 'ombre', intensity: 'bold', placement: 'tips', blend: 'defined' } } }
             ];
             
             // Color utility functions
@@ -2204,7 +2211,7 @@
                                             <div className="grid grid-cols-6 md:grid-cols-8 gap-4">
                                                 {professionalColorPalette.map((color) => {
                                                     const isSelected = colorChoice.accented?.baseColorId === color.id;
-                                                    const isLocked = !['jet-black', 'medium-brown', 'dark-brown'].includes(color.id) && !userProfile?.is_premium;
+                                                    const isLocked = !['black', 'medium-brown', 'dark-brown'].includes(color.id) && !userProfile?.is_premium;
                                                     
                                                     return (
                                                         <button
@@ -2224,7 +2231,7 @@
                                                                     ? 'border-purple-500 shadow-lg transform scale-110' 
                                                                     : 'border-gray-300 hover:border-gray-400 hover:scale-105'
                                                             }`}
-                                                            title={color.name}
+                                                            title={color.name.split(' ')[0]}
                                                         >
                                                             <div
                                                                 className="w-full h-full rounded-md"
@@ -2277,7 +2284,7 @@
                                                                     ? 'border-purple-500 shadow-lg transform scale-110' 
                                                                     : 'border-gray-300 hover:border-gray-400'
                                                             } ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:scale-105'}`}
-                                                            title={color.name}
+                                                            title={color.name.split(' ')[0]}
                                                         >
                                                             <div
                                                                 className="w-full h-full rounded-md"
