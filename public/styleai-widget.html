@@ -383,7 +383,7 @@
                         : 'https://web-production-5e40.up.railway.app';
                     
                     // Fetch updated user profile
-                    console.log('🔍 DEBUG: Fetching profile from:', `${API_BASE_URL}/api/auth/profile`);
+                    // Production: Profile endpoint logging removed for security
                     
                     const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
                         headers: {
@@ -660,7 +660,7 @@
                     ? 'http://localhost:8001'
                     : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                 
-                console.log('🔍 DEBUG: Using API_BASE_URL:', API_BASE_URL);
+                                    // Production: API URL logging removed for security
                 
                 // 🎯 CHECK TOKENS BEFORE GENERATION (Skip in test mode)
                 const userId = user?.id || userProfile?.id;
@@ -668,7 +668,7 @@
                     console.log('🔍 DEBUG: Checking token balance before generation');
                     
                     try {
-                        console.log('🔍 DEBUG: Making token balance request to:', `${API_BASE_URL}/api/tokens/balance/${userId}`);
+                        // Production: Token balance endpoint logging removed for security
                         const tokenCheckResponse = await fetch(`${API_BASE_URL}/api/tokens/balance/${userId}`);
                         const tokenData = await tokenCheckResponse.json();
                         
@@ -735,7 +735,7 @@
                     
                     // SOLUTION 1: DIRECT BASE64 METHOD (SIMPLEST - NO STORAGE NEEDED!)
                     console.log('🚀 USING DIRECT BASE64 METHOD (No storage required!)');
-                    console.log('🎯 Endpoint: /api/fal/direct-base64-transform');
+                    // Production: API endpoint logging removed for security
                     
                     let transformResponse;
                     
@@ -1018,7 +1018,7 @@
                                     const API_BASE_URL = window.location.hostname === 'localhost' 
                     ? 'http://localhost:8001' 
                     : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
-                    console.log('Testing connection to:', `${API_BASE_URL}/api/fal/test`);
+                    // Production: Test endpoint logging removed for security
                     
                     const response = await fetch(`${API_BASE_URL}/api/fal/test`);
                     const result = await response.json();
@@ -2645,8 +2645,8 @@
                             <div className="bg-gray-50 p-3 rounded-lg mb-4 text-left">
                                 <p className="text-xs text-gray-600">
                                     <strong>Style:</strong> {transformedImage.style}<br/>
-                                    <strong>Color:</strong> {transformedImage.color}<br/>
-                                    <strong>Method:</strong> {transformedImage.method || (uploadedImage?.url ? 'Supabase Upload' : 'Test Image')}
+                                    <strong>Color:</strong> {transformedImage.color}
+                                    {/* Method information removed for production security */}
                                 </p>
                                 {transformedImage.description && (
                                     <p className="text-xs text-gray-500 mt-2 italic">
