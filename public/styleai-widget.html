@@ -2698,32 +2698,32 @@
                                 {/* Primary Actions Row */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
-                                        onClick={() => {
-                                            // Enhanced download with better mobile support
-                                            const canvas = document.createElement('canvas');
-                                            const ctx = canvas.getContext('2d');
-                                            const img = new Image();
-                                            img.crossOrigin = 'anonymous';
-                                            img.onload = () => {
-                                                canvas.width = img.width;
-                                                canvas.height = img.height;
-                                                ctx.drawImage(img, 0, 0);
+                                        onClick={async () => {
+                                            try {
+                                                // Simple and reliable download approach
+                                                const link = document.createElement('a');
+                                                link.href = transformedImage.url;
+                                                link.download = `styleai-${selectedStyle?.name?.toLowerCase().replace(/\s+/g, '-') || 'transformation'}-${Date.now()}.png`;
+                                                link.target = '_blank'; // Helps with mobile browsers
                                                 
-                                                // Create download
-                                                canvas.toBlob((blob) => {
-                                                    const url = URL.createObjectURL(blob);
-                                                    const link = document.createElement('a');
-                                                    link.href = url;
-                                                    link.download = `styleai-${selectedStyle?.name?.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.png`;
+                                                // For mobile browsers, we might need to open in new tab
+                                                if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                                                    // Mobile: Open in new tab for download
+                                                    window.open(transformedImage.url, '_blank');
+                                                    showToast('📱 Image opened in new tab - use browser menu to save', 'info');
+                                                } else {
+                                                    // Desktop: Direct download
                                                     document.body.appendChild(link);
                                                     link.click();
                                                     document.body.removeChild(link);
-                                                    URL.revokeObjectURL(url);
-                                                    
                                                     showToast('✅ Image downloaded successfully!', 'success');
-                                                }, 'image/png', 0.9);
-                                            };
-                                            img.src = transformedImage.url;
+                                                }
+                                            } catch (error) {
+                                                console.error('Download failed:', error);
+                                                // Fallback: open in new tab
+                                                window.open(transformedImage.url, '_blank');
+                                                showToast('📱 Image opened in new tab - use browser menu to save', 'info');
+                                            }
                                         }}
                                         className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-4 rounded-xl flex items-center justify-center hover:from-green-600 hover:to-emerald-700 transition-all font-semibold shadow-lg"
                                     >
@@ -2736,37 +2736,54 @@
                                     <button
                                         onClick={async () => {
                                             try {
-                                                // Enhanced mobile share with Web Share API
-                                                if (navigator.share && navigator.canShare) {
-                                                    // Convert image to blob for sharing
-                                                    const response = await fetch(transformedImage.url);
-                                                    const blob = await response.blob();
-                                                    const file = new File([blob], `styleai-transformation-${Date.now()}.png`, { type: 'image/png' });
-                                                    
-                                                    if (navigator.canShare({ files: [file] })) {
+                                                // Check if Web Share API is available
+                                                if (navigator.share) {
+                                                    // Try simple URL sharing first (most reliable)
+                                                    try {
                                                         await navigator.share({
                                                             title: 'My StyleAI Hair Transformation',
-                                                            text: `Check out my new ${selectedStyle?.name} hairstyle created with StyleAI! 💇‍♀️✨`,
-                                                            files: [file]
-                                                        });
-                                                        showToast('✅ Shared successfully!', 'success');
-                                                    } else {
-                                                        // Fallback to URL sharing
-                                                        await navigator.share({
-                                                            title: 'My StyleAI Hair Transformation',
-                                                            text: `Check out my new ${selectedStyle?.name} hairstyle created with StyleAI! 💇‍♀️✨`,
+                                                            text: `Check out my new ${selectedStyle?.name || 'hairstyle'} created with StyleAI! 💇‍♀️✨`,
                                                             url: window.location.href
                                                         });
+                                                        showToast('✅ Shared successfully!', 'success');
+                                                        return;
+                                                    } catch (shareError) {
+                                                        console.log('URL share failed, trying image share:', shareError);
                                                     }
-                                                } else {
-                                                    // Fallback for desktop - copy to clipboard
-                                                    const shareText = `Check out my new ${selectedStyle?.name} hairstyle created with StyleAI! 💇‍♀️✨ ${window.location.href}`;
+                                                    
+                                                    // Try image sharing as fallback
+                                                    try {
+                                                        const response = await fetch(transformedImage.url);
+                                                        const blob = await response.blob();
+                                                        const file = new File([blob], `styleai-transformation-${Date.now()}.png`, { type: 'image/png' });
+                                                        
+                                                        await navigator.share({
+                                                            title: 'My StyleAI Hair Transformation',
+                                                            text: `Check out my new ${selectedStyle?.name || 'hairstyle'} created with StyleAI! 💇‍♀️✨`,
+                                                            files: [file]
+                                                        });
+                                                        showToast('✅ Image shared successfully!', 'success');
+                                                        return;
+                                                    } catch (imageShareError) {
+                                                        console.log('Image share failed:', imageShareError);
+                                                    }
+                                                }
+                                                
+                                                // Fallback for browsers without Web Share API
+                                                const shareText = `Check out my new ${selectedStyle?.name || 'hairstyle'} created with StyleAI! 💇‍♀️✨ ${window.location.href}`;
+                                                
+                                                if (navigator.clipboard) {
                                                     await navigator.clipboard.writeText(shareText);
-                                                    showToast('📋 Share text copied to clipboard!', 'success');
+                                                    showToast('📋 Share text copied to clipboard! Paste it anywhere to share.', 'success');
+                                                } else {
+                                                    // Ultimate fallback - show modal with text to copy
+                                                    alert(`Copy this text to share:\n\n${shareText}`);
                                                 }
                                             } catch (error) {
-                                                console.error('Share failed:', error);
-                                                showToast('❌ Share failed. Please try downloading instead.', 'error');
+                                                console.error('All share methods failed:', error);
+                                                // Final fallback - just open the image
+                                                window.open(transformedImage.url, '_blank');
+                                                showToast('🖼️ Image opened in new tab - you can share from there!', 'info');
                                             }
                                         }}
                                         className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 px-4 rounded-xl flex items-center justify-center hover:from-blue-600 hover:to-indigo-700 transition-all font-semibold shadow-lg"
