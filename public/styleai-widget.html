@@ -149,7 +149,7 @@
             const [isAuthenticating, setIsAuthenticating] = React.useState(false);
             const [showPaymentModal, setShowPaymentModal] = React.useState(false);
             const [isProcessingPayment, setIsProcessingPayment] = React.useState(false);
-            const [isTestMode, setIsTestMode] = React.useState(false);
+            const [isTestMode, setIsTestMode] = React.useState(false); // Production: always false, UI controls removed
             
             // Welcome banner states
             const [showWelcomeBanner, setShowWelcomeBanner] = React.useState(false);
@@ -1261,12 +1261,7 @@
                                                 💳 Check Payment Status
                                             </button>
                                             
-                                            <button
-                                                onClick={() => setIsTestMode(!isTestMode)}
-                                                className="w-full bg-gray-100 text-gray-600 py-2 px-3 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors"
-                                            >
-                                                🧪 {isTestMode ? 'Exit' : 'Enter'} Developer Mode
-                                            </button>
+                                            {/* Developer mode button removed for production */}
                                             
                                             <button
                                                 onClick={() => {
@@ -1478,19 +1473,7 @@
                         </div>
                         <p className="text-xl text-gray-600 mb-6">Professional Hair Transformation for Salons</p>
                         
-                        {/* Test Mode Access - Professional Toggle */}
-                        <div className="flex justify-center">
-                            <button
-                                onClick={() => setIsTestMode(!isTestMode)}
-                                className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
-                                    isTestMode 
-                                        ? 'bg-yellow-100 text-yellow-700 border border-yellow-300 hover:bg-yellow-200'
-                                        : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
-                                }`}
-                            >
-                                {isTestMode ? '🧪 Exit Developer Mode' : '🧪 Developer Mode'}
-                            </button>
-                        </div>
+                        {/* Developer mode toggle removed for production */}
                         
                         {/* Developer Test Panel */}
                         {isTestMode && (
