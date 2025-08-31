@@ -678,16 +678,9 @@
                         
                         console.log('🔍 DEBUG: Current token balance:', tokenData);
                         
-                        // Check if user has enough generations
-                        const hasGenerations = userProfile?.is_premium 
-                            ? tokenData.tokens_remaining >= 5  // Premium users need 5 tokens
-                            : tokenData.generations_remaining > 0;  // Free users need generations
-                            
-                        if (!hasGenerations) {
-                            const message = userProfile?.is_premium 
-                                ? `Insufficient tokens! You need 5 tokens per generation. Current balance: ${tokenData.tokens_remaining}`
-                                : `No generations remaining! You have used all your free generations.`;
-                            showToast(message, 'error');
+                        // Check if user has enough generations (unified logic for all users)
+                        if (tokenData.generations_remaining <= 0) {
+                            showToast(`No generations remaining! Upgrade to get more transformations.`, 'error');
                             // Show pricing modal
                             setShowPaymentModal(true);
                             return;
@@ -794,71 +787,43 @@
                             method: result.method || 'Bulletproof Transform 🛡️'
                         }));
                         
-                        // 🎯 DEDUCT GENERATION AFTER SUCCESSFUL TRANSFORMATION
+                        // 🎯 DEDUCT GENERATION AFTER SUCCESSFUL TRANSFORMATION (Unified for all users)
                         if (!isTestMode && userId) {
                             try {
-                                let deductResult;
+                                console.log('🔍 DEBUG: Consuming 1 generation for user');
                                 
-                                if (userProfile?.is_premium) {
-                                    // Premium users: Deduct 5 tokens
-                                    console.log('🔍 DEBUG: Deducting 5 tokens for premium user');
-                                    
-                                    const deductResponse = await fetch(`${API_BASE_URL}/api/tokens/deduct`, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                        },
-                                        body: JSON.stringify({
-                                            user_id: userId,
-                                            tokens_to_deduct: 5
-                                        })
-                                    });
-                                    
-                                    deductResult = await deductResponse.json();
-                                } else {
-                                    // Free users: Consume 1 generation
-                                    console.log('🔍 DEBUG: Consuming 1 generation for free user');
-                                    
-                                    const consumeResponse = await fetch(`${API_BASE_URL}/api/auth/consume-transformation`, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                        },
-                                        body: JSON.stringify({
-                                            user_id: userId
-                                        })
-                                    });
-                                    
-                                    deductResult = await consumeResponse.json();
-                                }
+                                const consumeResponse = await fetch(`${API_BASE_URL}/api/auth/consume-transformation`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        user_id: userId
+                                    })
+                                });
+                                
+                                const deductResult = await consumeResponse.json();
                                 
                                 if (deductResult.success) {
-                                    console.log('✅ Generation deduction successful:', deductResult);
+                                    console.log('✅ Generation consumed successfully:', deductResult);
                                     
-                                    // Update UI with new counts
+                                    // Update UI with new generation count
                                     if (deductResult.profile) {
                                         setUserProfile(prev => ({
                                             ...prev,
                                             ...deductResult.profile
                                         }));
-                                    } else if (deductResult.tokens_remaining !== undefined) {
-                                        setUserProfile(prev => ({
-                                            ...prev,
-                                            tokens_remaining: deductResult.tokens_remaining,
-                                            generations_remaining: deductResult.generations_remaining
-                                        }));
+                                        
+                                        const remainingGenerations = deductResult.profile.generations_remaining || 0;
+                                        showToast(`Generation complete! ${remainingGenerations} generations remaining.`, 'success');
                                     }
-                                    
-                                    const remainingGenerations = deductResult.profile?.generations_remaining || 
-                                                               Math.floor((deductResult.tokens_remaining || 0) / 5) || 0;
-                                    showToast(`Generation complete! ${remainingGenerations} generations remaining.`, 'success');
                                 } else {
-                                    console.error('❌ Generation deduction failed:', deductResult);
+                                    console.error('❌ Generation consumption failed:', deductResult);
                                     // Don't block the user - generation was successful
                                     showToast('Generation complete! (Count update failed)', 'warning');
                                 }
                             } catch (error) {
-                                console.error('❌ Generation deduction error:', error);
+                                console.error('❌ Generation consumption error:', error);
                                 // Don't block the user - generation was successful
                                 showToast('Generation complete! (Count update failed)', 'warning');
                             }
@@ -1387,7 +1352,7 @@
                                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                                         </svg>
                                         <div className="text-sm font-semibold text-gray-800">
-                                            {Math.floor((userProfile?.tokens_remaining || 0) / 5)} tokens
+                                            {userProfile?.generations_remaining || 0} tokens
                                         </div>
                                     </div>
                                 </div>
