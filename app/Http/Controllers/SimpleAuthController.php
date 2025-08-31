@@ -395,24 +395,69 @@ class SimpleAuthController extends Controller
     }
 
     /**
-     * Helper: Consume user transformation
+     * Helper: Consume user transformation (subtract 1 from generations_remaining)
      */
     private function consumeUserTransformation(string $userId)
     {
         try {
+            // Get current profile
+            $profile = $this->getUserProfile($userId);
+            
+            if (!$profile) {
+                Log::error('User profile not found for transformation consumption', ['user_id' => $userId]);
+                return false;
+            }
+            
+            $currentGenerations = $profile['generations_remaining'] ?? 0;
+            
+            // Check if user has generations left
+            if ($currentGenerations <= 0) {
+                Log::info('User has no generations remaining', [
+                    'user_id' => $userId,
+                    'current_generations' => $currentGenerations
+                ]);
+                return false;
+            }
+            
+            // Subtract 1 generation
+            $newGenerations = $currentGenerations - 1;
+            
+            // Update user profile in Supabase
             $response = Http::withHeaders([
                 'apikey' => $this->supabaseServiceKey,
                 'Authorization' => 'Bearer ' . $this->supabaseServiceKey,
                 'Content-Type' => 'application/json'
-            ])->post($this->supabaseUrl . '/rest/v1/rpc/consume_transformation', [
-                'user_id' => $userId
+            ])->patch($this->supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId, [
+                'generations_remaining' => $newGenerations,
+                'updated_at' => now()->toISOString()
             ]);
 
             if ($response->successful()) {
-                return $response->json();
+                Log::info('Generation consumed successfully', [
+                    'user_id' => $userId,
+                    'generations_before' => $currentGenerations,
+                    'generations_after' => $newGenerations
+                ]);
+                
+                // Return updated profile
+                $updatedProfile = array_merge($profile, [
+                    'generations_remaining' => $newGenerations
+                ]);
+                
+                return [
+                    'success' => true,
+                    'profile' => $updatedProfile,
+                    'generations_consumed' => 1,
+                    'generations_remaining' => $newGenerations
+                ];
+            } else {
+                Log::error('Failed to update generations_remaining', [
+                    'user_id' => $userId,
+                    'error' => $response->body()
+                ]);
+                return false;
             }
 
-            return false;
         } catch (\Exception $e) {
             Log::error('Consume transformation exception', ['error' => $e->getMessage()]);
             return false;

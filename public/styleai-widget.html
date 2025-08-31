@@ -678,10 +678,9 @@
                         
                         console.log('🔍 DEBUG: Current token balance:', tokenData);
                         
-                        // Check if user has enough generations (unified logic for all users)
-                        if (tokenData.generations_remaining <= 0) {
+                        // Check if user has enough generations
+                        if ((tokenData.generations_remaining || 0) <= 0) {
                             showToast(`No generations remaining! Upgrade to get more transformations.`, 'error');
-                            // Show pricing modal
                             setShowPaymentModal(true);
                             return;
                         }
