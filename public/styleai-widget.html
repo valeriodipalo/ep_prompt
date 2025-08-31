@@ -149,7 +149,7 @@
             const [isAuthenticating, setIsAuthenticating] = React.useState(false);
             const [showPaymentModal, setShowPaymentModal] = React.useState(false);
             const [isProcessingPayment, setIsProcessingPayment] = React.useState(false);
-            // Test mode disabled in production
+            const [isTestMode, setIsTestMode] = React.useState(false); // Production: always false, UI controls removed
             
             // Welcome banner states
             const [showWelcomeBanner, setShowWelcomeBanner] = React.useState(false);
@@ -383,7 +383,7 @@
                         : 'https://web-production-5e40.up.railway.app';
                     
                     // Fetch updated user profile
-                    console.log('🔍 DEBUG: Fetching profile from:', `${API_BASE_URL}/api/auth/profile`);
+                    // Production: Profile endpoint logging removed for security
                     
                     const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
                         headers: {
@@ -474,39 +474,46 @@
                 // NO COLOR CHANGE OPTION
                 { id: 'no-change', name: 'No Color Change', hex: '#f3f4f6', family: 'natural', isPremium: false, isNoChange: true, description: 'Keep original hair color' },
                 
-                // FREE NATURAL COLORS
-                { id: 'jet-black', name: 'Jet Black', hex: '#0A0A0A', family: 'black', isPremium: false, description: 'Deep, rich black' },
-                { id: 'dark-brown', name: 'Dark Brown', hex: '#2F1B14', family: 'brunette', isPremium: false, description: 'Rich, deep brown' },
-                { id: 'medium-brown', name: 'Medium Brown', hex: '#5D4037', family: 'brunette', isPremium: false, description: 'Versatile medium brown' },
-                { id: 'light-brown', name: 'Light Brown', hex: '#8D6E63', family: 'brunette', isPremium: false, description: 'Soft, light brown' },
-                { id: 'golden-blonde', name: 'Golden Blonde', hex: '#DAA520', family: 'blonde', isPremium: false, description: 'Classic golden blonde' },
-                { id: 'auburn', name: 'Auburn', hex: '#A52A2A', family: 'red', isPremium: false, description: 'Classic auburn red' },
-                { id: 'salt-pepper', name: 'Salt & Pepper', hex: '#808080', family: 'gray', isPremium: false, description: 'Natural gray blend' },
-                { id: 'platinum', name: 'Platinum', hex: '#E5E4E2', family: 'platinum', isPremium: false, description: 'Ultra-light platinum' },
+                // NATURAL COLORS (Based on new reference)
+                { id: 'black', name: 'Black', hex: '#0B0B0B', family: 'natural', isPremium: false, description: 'Deepest shade, jet black' },
+                { id: 'dark-brown', name: 'Dark Brown', hex: '#3B2F2F', family: 'natural', isPremium: false, description: 'Very deep brown' },
+                { id: 'chestnut-brown', name: 'Chestnut Brown', hex: '#4E342E', family: 'natural', isPremium: true, description: 'Rich brown with red undertones' },
+                { id: 'medium-brown', name: 'Medium Brown', hex: '#6B4226', family: 'natural', isPremium: false, description: 'Balanced mid-brown' },
+                { id: 'light-brown', name: 'Light Brown', hex: '#8B5A2B', family: 'natural', isPremium: true, description: 'Soft, warm brown' },
                 
-                // PREMIUM COLORS
-                { id: 'honey-blonde', name: 'Honey Blonde', hex: '#D4A574', family: 'blonde', isPremium: true, description: 'Warm honey-toned blonde' },
-                { id: 'ash-blonde', name: 'Ash Blonde', hex: '#C4A484', family: 'blonde', isPremium: true, description: 'Cool-toned ash blonde' },
-                { id: 'chestnut', name: 'Chestnut', hex: '#954535', family: 'brunette', isPremium: true, description: 'Warm reddish-brown' },
-                { id: 'copper', name: 'Copper', hex: '#B87333', family: 'red', isPremium: true, description: 'Bright copper red' },
-                { id: 'rose-gold', name: 'Rose Gold', hex: '#E8B4B8', family: 'fashion', isPremium: true, description: 'Trendy rose gold' },
-                { id: 'silver-gray', name: 'Silver Gray', hex: '#C0C0C0', family: 'gray', isPremium: true, description: 'Elegant silver gray' },
-                { id: 'pastel-pink', name: 'Pastel Pink', hex: '#FFB6C1', family: 'pastel', isPremium: true, description: 'Soft pastel pink' },
-                { id: 'lavender', name: 'Lavender', hex: '#E6E6FA', family: 'pastel', isPremium: true, description: 'Soft lavender purple' },
-                { id: 'electric-blue', name: 'Electric Blue', hex: '#7DF9FF', family: 'vibrant', isPremium: true, description: 'Bold electric blue' },
-                { id: 'neon-green', name: 'Neon Green', hex: '#39FF14', family: 'vibrant', isPremium: true, description: 'Bright neon green' },
-                { id: 'hot-pink', name: 'Hot Pink', hex: '#FF69B4', family: 'vibrant', isPremium: true, description: 'Vibrant hot pink' },
-                { id: 'royal-purple', name: 'Royal Purple', hex: '#7851A9', family: 'vibrant', isPremium: true, description: 'Rich royal purple' }
+                // BLONDE COLORS
+                { id: 'dark-blonde', name: 'Dark Blonde', hex: '#C2A676', family: 'blonde', isPremium: true, description: 'Dirty blonde with brown tones' },
+                { id: 'sandy-blonde', name: 'Sandy Blonde', hex: '#D6C49B', family: 'blonde', isPremium: true, description: 'Neutral blonde with beige undertones' },
+                { id: 'golden-blonde', name: 'Golden Blonde', hex: '#FFD36E', family: 'blonde', isPremium: false, description: 'Warm, sunlit blonde' },
+                { id: 'light-blonde', name: 'Light Blonde', hex: '#F3E2B3', family: 'blonde', isPremium: true, description: 'Pale golden blonde' },
+                { id: 'platinum-blonde', name: 'Platinum Blonde', hex: '#FAF6F0', family: 'blonde', isPremium: true, description: 'Nearly white, icy blonde' },
+                
+                // RED COLORS
+                { id: 'auburn', name: 'Auburn', hex: '#7C0A02', family: 'red', isPremium: true, description: 'Deep reddish-brown' },
+                { id: 'copper-red', name: 'Copper Red', hex: '#B9471E', family: 'red', isPremium: true, description: 'Vivid orange-red' },
+                { id: 'natural-red', name: 'Natural Red', hex: '#D14F1D', family: 'red', isPremium: true, description: 'Classic bright red hair' },
+                { id: 'strawberry-blonde', name: 'Strawberry Blonde', hex: '#E6B87C', family: 'red', isPremium: true, description: 'Blonde with reddish hues' },
+                
+                // GRAY/SILVER COLORS
+                { id: 'gray', name: 'Gray', hex: '#C0C0C0', family: 'gray', isPremium: true, description: 'Silver-gray to white' },
+                { id: 'silver', name: 'Silver', hex: '#AFAFAF', family: 'gray', isPremium: true, description: 'Chrome-like metallic gray' },
+                
+                // CREATIVE COLORS
+                { id: 'blue', name: 'Blue', hex: '#3B82F6', family: 'creative', isPremium: true, description: 'Deep navy to electric blue' },
+                { id: 'green', name: 'Green', hex: '#10B981', family: 'creative', isPremium: true, description: 'Emerald to neon lime' },
+                { id: 'purple', name: 'Purple', hex: '#6B21A8', family: 'creative', isPremium: true, description: 'Violet to lavender' },
+                { id: 'pink', name: 'Pink', hex: '#EC4899', family: 'creative', isPremium: true, description: 'Hot pink to pastel' },
+                { id: 'rainbow', name: 'Rainbow', hex: '#FF6B6B', family: 'creative', isPremium: true, description: 'Multicolor blend' }
             ];
             
             // Color presets for quick selection
             const colorPresets = [
                 { id: 'classic-brunette', label: 'Classic Brunette', choice: { type: 'single-tone', singleTone: { colorId: 'medium-brown' } } },
                 { id: 'golden-goddess', label: 'Golden Goddess', choice: { type: 'single-tone', singleTone: { colorId: 'golden-blonde' } } },
-                { id: 'midnight-black', label: 'Midnight Black', choice: { type: 'single-tone', singleTone: { colorId: 'jet-black' } } },
-                { id: 'honey-balayage', label: 'Honey Balayage', choice: { type: 'accented', accented: { baseColorId: 'medium-brown', accentColorId: 'honey-blonde', technique: 'balayage', intensity: 'standard', placement: 'face-framing', blend: 'soft' } } },
-                { id: 'platinum-highlights', label: 'Platinum Highlights', choice: { type: 'accented', accented: { baseColorId: 'dark-brown', accentColorId: 'platinum', technique: 'highlights', intensity: 'bold', placement: 'overall', blend: 'defined' } } },
-                { id: 'rose-ombre', label: 'Rose Ombré', choice: { type: 'accented', accented: { baseColorId: 'dark-brown', accentColorId: 'rose-gold', technique: 'ombre', intensity: 'bold', placement: 'tips', blend: 'defined' } } }
+                { id: 'midnight-black', label: 'Midnight Black', choice: { type: 'single-tone', singleTone: { colorId: 'black' } } },
+                { id: 'honey-balayage', label: 'Honey Balayage', choice: { type: 'accented', accented: { baseColorId: 'medium-brown', accentColorId: 'golden-blonde', technique: 'balayage', intensity: 'standard', placement: 'face-framing', blend: 'soft' } } },
+                { id: 'platinum-highlights', label: 'Platinum Highlights', choice: { type: 'accented', accented: { baseColorId: 'dark-brown', accentColorId: 'platinum-blonde', technique: 'highlights', intensity: 'bold', placement: 'overall', blend: 'defined' } } },
+                { id: 'rose-ombre', label: 'Rose Ombré', choice: { type: 'accented', accented: { baseColorId: 'dark-brown', accentColorId: 'pink', technique: 'ombre', intensity: 'bold', placement: 'tips', blend: 'defined' } } }
             ];
             
             // Color utility functions
@@ -660,15 +667,15 @@
                     ? 'http://localhost:8001'
                     : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                 
-                // Production: Clean console logging
+                                    // Production: API URL logging removed for security
                 
-                // 🎯 CHECK TOKENS BEFORE GENERATION
+                // 🎯 CHECK TOKENS BEFORE GENERATION (Skip in test mode)
                 const userId = user?.id || userProfile?.id;
-                if (userId) {
-                    // Checking token balance...
+                if (!isTestMode && userId) {
+                    console.log('🔍 DEBUG: Checking token balance before generation');
                     
                     try {
-                        // Making token balance request...
+                        // Production: Token balance endpoint logging removed for security
                         const tokenCheckResponse = await fetch(`${API_BASE_URL}/api/tokens/balance/${userId}`);
                         const tokenData = await tokenCheckResponse.json();
                         
@@ -678,10 +685,9 @@
                         
                         console.log('🔍 DEBUG: Current token balance:', tokenData);
                         
-                        // Check if user has enough tokens (5 tokens per generation)
-                        if (tokenData.tokens_remaining < 5) {
-                            showToast(`Insufficient tokens! You need 5 tokens per generation. Current balance: ${tokenData.tokens_remaining}`, 'error');
-                            // Show pricing modal
+                        // Check if user has enough generations
+                        if ((tokenData.generations_remaining || 0) <= 0) {
+                            showToast(`No generations remaining! Upgrade to get more transformations.`, 'error');
                             setShowPaymentModal(true);
                             return;
                         }
@@ -735,7 +741,7 @@
                     
                     // SOLUTION 1: DIRECT BASE64 METHOD (SIMPLEST - NO STORAGE NEEDED!)
                     console.log('🚀 USING DIRECT BASE64 METHOD (No storage required!)');
-                    console.log('🎯 Endpoint: /api/fal/direct-base64-transform');
+                    // Production: API endpoint logging removed for security
                     
                     let transformResponse;
                     
@@ -787,45 +793,49 @@
                             method: result.method || 'Bulletproof Transform 🛡️'
                         }));
                         
-                        // 🎯 DEDUCT TOKENS AFTER SUCCESSFUL GENERATION
-                        if (userId) {
+                        // 🎯 DEDUCT GENERATION AFTER SUCCESSFUL TRANSFORMATION (Unified for all users)
+                        if (!isTestMode && userId) {
                             try {
-                                // Deducting tokens...
+                                console.log('🔍 DEBUG: Consuming 1 generation for user');
                                 
-                                const deductResponse = await fetch(`${API_BASE_URL}/api/tokens/deduct`, {
+                                const consumeResponse = await fetch(`${API_BASE_URL}/api/auth/consume-transformation`, {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
                                     },
                                     body: JSON.stringify({
-                                        user_id: userId,
-                                        tokens_to_deduct: 5
+                                        user_id: userId
                                     })
                                 });
                                 
-                                const deductResult = await deductResponse.json();
+                                const deductResult = await consumeResponse.json();
                                 
                                 if (deductResult.success) {
-                                    console.log('✅ Tokens deducted successfully:', deductResult);
+                                    console.log('✅ Generation consumed successfully:', deductResult);
                                     
-                                    // Update UI with new token count
-                                    setUserProfile(prev => ({
-                                        ...prev,
-                                        tokens_remaining: deductResult.tokens_remaining,
-                                        generations_remaining: deductResult.generations_remaining
-                                    }));
-                                    
-                                    showToast(`Generation complete! ${deductResult.tokens_deducted} tokens used. Remaining: ${deductResult.tokens_remaining}`, 'success');
+                                    // Update UI with new generation count
+                                    if (deductResult.profile) {
+                                        setUserProfile(prev => ({
+                                            ...prev,
+                                            ...deductResult.profile
+                                        }));
+                                        
+                                        const remainingGenerations = deductResult.profile.generations_remaining || 0;
+                                        showToast(`Generation complete! ${remainingGenerations} generations remaining.`, 'success');
+                                    }
                                 } else {
-                                    console.error('❌ Token deduction failed:', deductResult);
+                                    console.error('❌ Generation consumption failed:', deductResult);
                                     // Don't block the user - generation was successful
-                                    showToast('Generation complete! (Token update failed)', 'warning');
+                                    showToast('Generation complete! (Count update failed)', 'warning');
                                 }
                             } catch (error) {
-                                console.error('❌ Token deduction error:', error);
+                                console.error('❌ Generation consumption error:', error);
                                 // Don't block the user - generation was successful
-                                showToast('Generation complete! (Token update failed)', 'warning');
+                                showToast('Generation complete! (Count update failed)', 'warning');
                             }
+                        } else if (isTestMode) {
+                            console.log('🧪 Test Mode: Skipping token deduction');
+                            showToast('Generation complete! (Test Mode)', 'success');
                         }
                         
                         setIsGenerating(false); // FIX: Stop loading spinner
@@ -1015,7 +1025,7 @@
                                     const API_BASE_URL = window.location.hostname === 'localhost' 
                     ? 'http://localhost:8001' 
                     : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
-                    console.log('Testing connection to:', `${API_BASE_URL}/api/fal/test`);
+                    // Production: Test endpoint logging removed for security
                     
                     const response = await fetch(`${API_BASE_URL}/api/fal/test`);
                     const result = await response.json();
@@ -1055,9 +1065,9 @@
                     : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                     const isPremium = userProfile?.is_premium || false;
                     
-                    // Load styles
-                    const stylesResponse = await fetch(`${API_BASE_URL}/api/styles/hairstyles?is_premium=${isPremium}`);
-                    const stylesData = await stylesResponse.json();
+                                         // Load styles with gender parameter
+                     const stylesResponse = await fetch(`${API_BASE_URL}/api/styles/hairstyles?is_premium=${isPremium}&gender=${selectedGender || 'male'}`);
+                     const stylesData = await stylesResponse.json();
                     
                     if (stylesData.success) {
                         setHairstyles(stylesData.styles);
@@ -1090,10 +1100,12 @@
                 }
             };
 
-            // Load styles when component mounts or user premium status changes
+            // Load styles when component mounts, user premium status changes, or gender changes
             React.useEffect(() => {
-                loadStylesAndColors();
-            }, [userProfile?.is_premium]);
+                if (selectedGender) {
+                    loadStylesAndColors();
+                }
+            }, [userProfile?.is_premium, selectedGender]);
 
             // Payment processing function
             const handlePremiumUpgrade = async () => {
@@ -1190,9 +1202,11 @@
 
             return (
                 <div className="max-w-4xl mx-auto px-4 sm:px-6">
-                    <div className="styleai-widget bg-white rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 relative">
-                    {/* Top Left - Professional User Button */}
-                    <div className="absolute top-4 left-4 sm:top-6 sm:left-6">
+                    {/* Dedicated Top Bar */}
+                    <div className="mb-4">
+                        <div className="flex justify-between items-center py-3">
+                            {/* Left: User Profile */}
+                            <div>
                         {user ? (
                             <div className="relative group">
                                 <button className="flex items-center space-x-2 sm:space-x-3 bg-white rounded-xl shadow-lg border border-gray-200 px-3 py-2 sm:px-4 sm:py-3 hover:shadow-xl transition-all duration-200">
@@ -1252,18 +1266,24 @@
                                             )}
                                             
                                             <button
-                                                onClick={checkPaymentStatus}
-                                                className="w-full bg-blue-100 text-blue-700 py-2 px-3 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
+                                                onClick={() => {
+                                                    alert(`How StyleAI Works:\n\n1. 📸 Upload Your Photo\n   Choose a clear, front-facing photo for best results\n\n2. 🎨 Select Your Style\n   Browse our professional hairstyle collection\n\n3. 🌈 Pick Your Color\n   Choose from natural or bold color options\n\n4. ✨ Generate & Download\n   AI creates your new look in seconds\n\nTips for Best Results:\n• Use good lighting\n• Face the camera directly\n• Keep hair visible and unobstructed\n• Try different styles to find your perfect look!`);
+                                                }}
+                                                className="w-full bg-purple-100 text-purple-700 py-2 px-3 rounded-lg text-xs font-medium hover:bg-purple-200 transition-colors"
                                             >
-                                                💳 Check Payment Status
+                                                📖 How it Works
                                             </button>
                                             
                                             <button
-                                                onClick={() => setIsTestMode(!isTestMode)}
-                                                className="w-full bg-gray-100 text-gray-600 py-2 px-3 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors"
+                                                onClick={() => {
+                                                    alert(`Support & Contact:\n\nFor any questions, technical support, or inquiries, please contact us at:\n\n📧 info@aisuitup.com\n\nWe're here to help you get the perfect hairstyle transformation!\n\nOur support team typically responds within 24 hours.`);
+                                                }}
+                                                className="w-full bg-green-100 text-green-700 py-2 px-3 rounded-lg text-xs font-medium hover:bg-green-200 transition-colors"
                                             >
-                                                🧪 {isTestMode ? 'Exit' : 'Enter'} Developer Mode
+                                                💬 Support
                                             </button>
+                                            
+                                            {/* Developer mode button removed for production */}
                                             
                                             <button
                                                 onClick={() => {
@@ -1296,75 +1316,90 @@
                                 </div>
                             </button>
                         )}
-                    </div>
-                    
-                    {/* Top Right - Professional Token Counter */}
-                    <div className="absolute top-6 right-6">
+                            </div>
+                            
+                            {/* Right: Token Counter */}
+                            <div>
                         {user && userProfile && !userProfile.is_premium ? (
-                            <div className="relative group">
-                                <div className="bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 hover:shadow-xl transition-all duration-200">
-                                    <div className="flex items-center space-x-2">
-                                        <div className={`w-2 h-2 rounded-full ${
-                                            Math.max(0, 2 - (userProfile?.free_transformations_used || 0)) < 1 
-                                                ? 'bg-red-500 animate-pulse' 
-                                                : 'bg-green-500'
-                                        }`}></div>
-                                        <div className="text-sm font-semibold text-gray-800">
-                                            {Math.max(0, 2 - (userProfile?.free_transformations_used || 0))} generations
+                            <div className="relative">
+                                <div className="flex items-center space-x-2">
+                                    {/* Token Counter */}
+                                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 hover:shadow-xl transition-all duration-200">
+                                        <div className="flex items-center space-x-2">
+                                            <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                                            </svg>
+                                            <div className="text-sm font-semibold text-gray-800">
+                                                {userProfile?.generations_remaining || 0} tokens
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="text-xs text-gray-500">Free transformations</div>
+                                    
+                                    {/* + PRO Button */}
+                                    <button
+                                        onClick={() => setShowPaymentModal(true)}
+                                        className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-3 rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:scale-105 flex items-center space-x-1"
+    
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                        </svg>
+                                        <span className="text-xs font-semibold">PRO</span>
+                                    </button>
                                 </div>
                                 
-                                {/* Professional Token Tooltip */}
-                                <div className="absolute right-0 top-16 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                                    <div className="space-y-3">
-                                        <div className="text-center">
-                                            <div className="text-lg font-bold text-gray-800">Token Balance</div>
-                                            <div className="text-2xl font-bold text-purple-600">
-                                                {userProfile?.tokens_remaining || 2}
-                                            </div>
-                                            <div className="text-xs text-gray-500">tokens remaining</div>
-                                        </div>
-                                        
-                                        <div className="bg-gray-50 rounded-lg p-3">
-                                            <div className="text-xs text-gray-600 space-y-1">
-                                                <div>• Free tier: 2 transformations</div>
-                                                <div>• {Math.max(0, 2 - (userProfile?.free_transformations_used || 0))} generations left</div>
-                                            </div>
-                                        </div>
-                                        
-                                        {Math.max(0, 2 - (userProfile?.free_transformations_used || 0)) < 1 && (
-                                            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                                                <div className="text-xs text-red-600 font-medium">⚠️ Running Low!</div>
-                                                <div className="text-xs text-red-500">Choose a package to continue styling!</div>
-                                            </div>
-                                        )}
-                                        
-                                        <button
-                                            onClick={() => setShowPaymentModal(true)}
-                                            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-3 rounded-lg text-xs font-medium hover:from-purple-600 hover:to-pink-600 transition-colors"
-                                        >
-                                            Upgrade to Premium
-                                        </button>
-                                    </div>
-                                </div>
                             </div>
                         ) : user && userProfile?.is_premium ? (
-                            <div className="bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3">
-                                <div className="flex items-center space-x-2">
-                                    <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-                                    <div className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                                        {userProfile?.tokens_remaining || 0} tokens
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                        {Math.floor((userProfile?.tokens_remaining || 0) / 5)} generations available (5 tokens each)
+                            <div className="flex items-center space-x-2">
+                                {/* Premium Token Counter */}
+                                <div className="bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 hover:shadow-xl transition-all duration-200">
+                                    <div className="flex items-center space-x-2">
+                                        <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                                        </svg>
+                                        <div className="text-sm font-semibold text-gray-800">
+                                            {userProfile?.generations_remaining || 0} tokens
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="text-xs text-gray-500">{userProfile?.current_package || 'Premium'} package</div>
+                                
+                                {/* + PRO Button for Top Up */}
+                                <button
+                                    onClick={() => setShowPaymentModal(true)}
+                                    className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-3 rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:scale-105 flex items-center space-x-1"
+
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                    <span className="text-xs font-semibold">PRO</span>
+                                </button>
                             </div>
                         ) : null}
+                            </div>
+                        </div>
                     </div>
+                    
+                    {/* Smart Get Pro Floating Button - Only for Free Users */}
+                    {user && userProfile && !userProfile.is_premium && step > 1 && (
+                        <div className="fixed bottom-6 right-6 z-40">
+                            <button
+                                onClick={() => setShowPaymentModal(true)}
+                                className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white p-3 rounded-full shadow-lg hover:from-yellow-500 hover:to-orange-600 transition-all hover:scale-110 group"
+                                title="Upgrade to Pro"
+                            >
+                                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clipRule="evenodd" />
+                                </svg>
+                                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                                    💎
+                                </div>
+                            </button>
+                        </div>
+                    )}
+                    
+                    {/* Main Widget Container */}
+                    <div className="styleai-widget bg-white rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 relative">
                     
                     {/* Welcome Banner with Confetti */}
                     {showWelcomeBanner && welcomeData && (
@@ -1475,19 +1510,7 @@
                         </div>
                         <p className="text-xl text-gray-600 mb-6">Professional Hair Transformation for Salons</p>
                         
-                        {/* Test Mode Access - Professional Toggle */}
-                        <div className="flex justify-center">
-                            <button
-                                onClick={() => setIsTestMode(!isTestMode)}
-                                className={`px-4 py-2 text-sm rounded-lg transition-all duration-200 ${
-                                    isTestMode 
-                                        ? 'bg-yellow-100 text-yellow-700 border border-yellow-300 hover:bg-yellow-200'
-                                        : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
-                                }`}
-                            >
-                                {isTestMode ? '🧪 Exit Developer Mode' : '🧪 Developer Mode'}
-                            </button>
-                        </div>
+                        {/* Developer mode toggle removed for production */}
                         
                         {/* Developer Test Panel */}
                         {isTestMode && (
@@ -1939,15 +1962,15 @@
                                         </button>
                                         {styleCategories.map((category) => (
                                             <button
-                                                key={category}
-                                                onClick={() => setSelectedStyleCategory(category)}
+                                                key={category.key || category}
+                                                onClick={() => setSelectedStyleCategory(category.key || category)}
                                                 className={`px-3 py-1 rounded-full text-xs transition-colors ${
-                                                    selectedStyleCategory === category
+                                                    selectedStyleCategory === (category.key || category)
                                                         ? 'bg-purple-500 text-white'
                                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                 }`}
                                             >
-                                                {category.replace('_', ' ')}
+                                                {category.emoji || ''} {category.label || category.replace('_', ' ')}
                                             </button>
                                         ))}
                                     </div>
@@ -1997,10 +2020,10 @@
                                                 <div className="text-xs text-gray-600 font-medium">{style.name}</div>
                                                 <div className="text-xs text-gray-500 mt-1">{style.category}</div>
                                                 
-                                                {/* Lock overlay for premium styles */}
+                                                {/* Lock overlay for premium styles - consistent with color locks */}
                                                 {!style.is_free && !userProfile?.is_premium && (
-                                                    <div className="absolute inset-0 bg-black bg-opacity-20 rounded-lg flex items-center justify-center">
-                                                        <div className="text-white text-lg">🔒</div>
+                                                    <div className="absolute inset-0 bg-black bg-opacity-40 rounded-lg flex items-center justify-center">
+                                                        <span className="text-white text-lg">🔒</span>
                                                     </div>
                                                 )}
                                             </button>
@@ -2073,9 +2096,16 @@
                                                             : 'border-gray-200 hover:border-purple-300 hover:shadow-md'
                                                     }`}
                                                 >
-                                                    <div className="text-sm font-semibold text-gray-800 mb-1">{preset.label}</div>
-                                                    <div className="text-xs text-gray-600">
-                                                        {preset.description}
+                                                    <div className="relative">
+                                                        <div className="text-sm font-semibold text-gray-800 mb-1 flex items-center">
+                                                            {preset.label}
+                                                            {preset.id === 'honey-balayage' && (
+                                                                <span className="ml-2 text-yellow-500">💎</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-xs text-gray-600">
+                                                            {preset.description}
+                                                        </div>
                                                     </div>
                                                 </button>
                                             );
@@ -2176,22 +2206,29 @@
                                         <div>
                                             <h4 className="text-lg font-semibold text-gray-800 mb-4">Base Color</h4>
                                             <div className="grid grid-cols-6 md:grid-cols-8 gap-4">
-                                                {professionalColorPalette.filter(c => ['medium-brown', 'dark-brown'].includes(c.id)).map((color) => {
+                                                {professionalColorPalette.map((color) => {
                                                     const isSelected = colorChoice.accented?.baseColorId === color.id;
+                                                    const isLocked = !['black', 'medium-brown', 'dark-brown'].includes(color.id) && !userProfile?.is_premium;
                                                     
                                                     return (
                                                         <button
                                                             key={color.id}
-                                                            onClick={() => setColorChoice(prev => ({
-                                                                ...prev,
-                                                                accented: { ...prev.accented, baseColorId: color.id }
-                                                            }))}
+                                                            onClick={() => {
+                                                                if (isLocked) {
+                                                                    setShowPaymentModal(true);
+                                                                    return;
+                                                                }
+                                                                setColorChoice(prev => ({
+                                                                    ...prev,
+                                                                    accented: { ...prev.accented, baseColorId: color.id }
+                                                                }));
+                                                            }}
                                                             className={`relative w-12 h-12 rounded-lg border-2 transition-all duration-200 ${
                                                                 isSelected 
                                                                     ? 'border-purple-500 shadow-lg transform scale-110' 
                                                                     : 'border-gray-300 hover:border-gray-400 hover:scale-105'
                                                             }`}
-                                                            title={color.name}
+                                                            title={color.name.split(' ')[0]}
                                                         >
                                                             <div
                                                                 className="w-full h-full rounded-md"
@@ -2205,6 +2242,13 @@
                                                                     </svg>
                                                                 </div>
                                                             )}
+                                                            
+                                                            {/* Lock overlay for premium base colors */}
+                                                            {isLocked && (
+                                                                <div className="absolute inset-0 bg-black bg-opacity-40 rounded-md flex items-center justify-center">
+                                                                    <span className="text-white text-lg">🔒</span>
+                                                                </div>
+                                                            )}
                                                         </button>
                                                     );
                                                 })}
@@ -2215,10 +2259,9 @@
                                         <div>
                                             <h4 className="text-lg font-semibold text-gray-800 mb-4">Accent Color</h4>
                                             <div className="grid grid-cols-6 md:grid-cols-8 gap-4">
-                                                {professionalColorPalette.filter(c => ['golden-blonde', 'honey-blonde', 'platinum', 'ash-blonde'].includes(c.id)).map((color) => {
+                                                {professionalColorPalette.map((color) => {
                                                     const isSelected = colorChoice.accented?.accentColorId === color.id;
-                                                    const isHoneyBalayageColor = color.id === 'golden-blonde';
-                                                    const isLocked = !isHoneyBalayageColor && !userProfile?.is_premium;
+                                                    const isLocked = !['golden-blonde'].includes(color.id) && !userProfile?.is_premium;
                                                     
                                                     return (
                                                         <button
@@ -2238,7 +2281,7 @@
                                                                     ? 'border-purple-500 shadow-lg transform scale-110' 
                                                                     : 'border-gray-300 hover:border-gray-400'
                                                             } ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:scale-105'}`}
-                                                            title={color.name}
+                                                            title={color.name.split(' ')[0]}
                                                         >
                                                             <div
                                                                 className="w-full h-full rounded-md"
@@ -2489,9 +2532,20 @@
                     {/* Step 4: Results with Interactive Slider */}
                     {step === 4 && transformedImage && (
                         <div className="text-center relative">
-                            <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
-                                {showLoadingScreen ? 'Creating Your New Look! ✨' : 'Your New Look! ✨'}
-                            </h3>
+                            {/* Enhanced Results Header */}
+                            <div className="mb-6">
+                                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mb-4 shadow-lg">
+                                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                                    {showLoadingScreen ? 'Creating Your New Look!' : 'Your Transformation is Ready!'}
+                                </h3>
+                                <p className="text-gray-600 text-sm">
+                                    {showLoadingScreen ? 'Our AI is working its magic...' : 'Swipe to compare your before and after'}
+                                </p>
+                            </div>
                             
                             {/* Loading Overlay */}
                             {showLoadingScreen && (
@@ -2538,8 +2592,13 @@
                                 </div>
                             )}
                             
-                            {/* Interactive Before/After Slider */}
+                            {/* Enhanced Interactive Before/After Slider */}
                             <div className="relative mb-6">
+                                {/* Before/After Labels */}
+                                <div className="flex justify-between mb-3 px-4">
+                                    <span className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">Before</span>
+                                    <span className="text-sm font-medium text-purple-600 bg-purple-100 px-3 py-1 rounded-full">After ✨</span>
+                                </div>
                                 <div className="relative w-full max-w-sm mx-auto">
                                     {/* Container for images - Dynamic sizing based on image */}
                                     <div 
@@ -2659,8 +2718,8 @@
                             <div className="bg-gray-50 p-3 rounded-lg mb-4 text-left">
                                 <p className="text-xs text-gray-600">
                                     <strong>Style:</strong> {transformedImage.style}<br/>
-                                    <strong>Color:</strong> {transformedImage.color}<br/>
-                                    <strong>Method:</strong> {transformedImage.method || (uploadedImage?.url ? 'Supabase Upload' : 'Test Image')}
+                                    <strong>Color:</strong> {transformedImage.color}
+                                    {/* Method information removed for production security */}
                                 </p>
                                 {transformedImage.description && (
                                     <p className="text-xs text-gray-500 mt-2 italic">
@@ -2669,25 +2728,160 @@
                                 )}
                             </div>
 
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => {
-                                        const link = document.createElement('a');
-                                        link.href = transformedImage.url;
-                                        link.download = 'styleai-transformation.png';
-                                        link.click();
-                                    }}
-                                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg flex items-center justify-center hover:bg-green-700 transition-colors"
-                                >
-                                    <Download className="h-4 w-4 mr-1" />
-                                    Download
-                                </button>
-                                <button
-                                    onClick={handleReset}
-                                    className="flex-1 border border-purple-600 text-purple-600 py-2 px-4 rounded-lg hover:bg-purple-50 transition-colors"
-                                >
-                                    Try Again
-                                </button>
+                            {/* Enhanced Action Buttons - Mobile Optimized */}
+                            <div className="space-y-3">
+                                {/* Primary Actions Row */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                // Simple and reliable download approach
+                                                const link = document.createElement('a');
+                                                link.href = transformedImage.url;
+                                                link.download = `styleai-${selectedStyle?.name?.toLowerCase().replace(/\s+/g, '-') || 'transformation'}-${Date.now()}.png`;
+                                                link.target = '_blank'; // Helps with mobile browsers
+                                                
+                                                // For mobile browsers, we might need to open in new tab
+                                                if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                                                    // Mobile: Open in new tab for download
+                                                    window.open(transformedImage.url, '_blank');
+                                                    showToast('📱 Image opened in new tab - use browser menu to save', 'info');
+                                                } else {
+                                                    // Desktop: Direct download
+                                                    document.body.appendChild(link);
+                                                    link.click();
+                                                    document.body.removeChild(link);
+                                                    showToast('✅ Image downloaded successfully!', 'success');
+                                                }
+                                            } catch (error) {
+                                                console.error('Download failed:', error);
+                                                // Fallback: open in new tab
+                                                window.open(transformedImage.url, '_blank');
+                                                showToast('📱 Image opened in new tab - use browser menu to save', 'info');
+                                            }
+                                        }}
+                                        className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-4 rounded-xl flex items-center justify-center hover:from-green-600 hover:to-emerald-700 transition-all font-semibold shadow-lg"
+                                    >
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        Download
+                                    </button>
+                                    
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                // Check if Web Share API is available
+                                                if (navigator.share) {
+                                                    // Try simple URL sharing first (most reliable)
+                                                    try {
+                                                        await navigator.share({
+                                                            title: 'My StyleAI Hair Transformation',
+                                                            text: `Check out my new ${selectedStyle?.name || 'hairstyle'} created with StyleAI! 💇‍♀️✨`,
+                                                            url: window.location.href
+                                                        });
+                                                        showToast('✅ Shared successfully!', 'success');
+                                                        return;
+                                                    } catch (shareError) {
+                                                        console.log('URL share failed, trying image share:', shareError);
+                                                    }
+                                                    
+                                                    // Try image sharing as fallback
+                                                    try {
+                                                        const response = await fetch(transformedImage.url);
+                                                        const blob = await response.blob();
+                                                        const file = new File([blob], `styleai-transformation-${Date.now()}.png`, { type: 'image/png' });
+                                                        
+                                                        await navigator.share({
+                                                            title: 'My StyleAI Hair Transformation',
+                                                            text: `Check out my new ${selectedStyle?.name || 'hairstyle'} created with StyleAI! 💇‍♀️✨`,
+                                                            files: [file]
+                                                        });
+                                                        showToast('✅ Image shared successfully!', 'success');
+                                                        return;
+                                                    } catch (imageShareError) {
+                                                        console.log('Image share failed:', imageShareError);
+                                                    }
+                                                }
+                                                
+                                                // Fallback for browsers without Web Share API
+                                                const shareText = `Check out my new ${selectedStyle?.name || 'hairstyle'} created with StyleAI! 💇‍♀️✨ ${window.location.href}`;
+                                                
+                                                if (navigator.clipboard) {
+                                                    await navigator.clipboard.writeText(shareText);
+                                                    showToast('📋 Share text copied to clipboard! Paste it anywhere to share.', 'success');
+                                                } else {
+                                                    // Ultimate fallback - show modal with text to copy
+                                                    alert(`Copy this text to share:\n\n${shareText}`);
+                                                }
+                                            } catch (error) {
+                                                console.error('All share methods failed:', error);
+                                                // Final fallback - just open the image
+                                                window.open(transformedImage.url, '_blank');
+                                                showToast('🖼️ Image opened in new tab - you can share from there!', 'info');
+                                            }
+                                        }}
+                                        className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 px-4 rounded-xl flex items-center justify-center hover:from-blue-600 hover:to-indigo-700 transition-all font-semibold shadow-lg"
+                                    >
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                                        </svg>
+                                        Share
+                                    </button>
+                                </div>
+                                
+                                {/* Secondary Actions Row */}
+                                <div className="grid grid-cols-1 gap-3">
+                                    <button
+                                        onClick={() => {
+                                            // Reset to style selection but keep the uploaded image
+                                            setStep(2);
+                                            setSelectedStyle(null);
+                                            setGeneratedImages([]);
+                                            setTransformedImage(null);
+                                            showToast('🎨 Choose a new style to try!', 'info');
+                                        }}
+                                        className="bg-gradient-to-r from-purple-500 to-pink-600 text-white py-3 px-6 rounded-xl flex items-center justify-center hover:from-purple-600 hover:to-pink-700 transition-all font-semibold shadow-lg"
+                                    >
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                        </svg>
+                                        Try a New Hairstyle
+                                    </button>
+                                </div>
+                                
+                                {/* Smart Get Pro Section - Only for Free Users */}
+                                {user && userProfile && !userProfile.is_premium && (
+                                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-4 mt-2">
+                                        <div className="text-center">
+                                            <div className="text-sm font-semibold text-gray-800 mb-2">
+                                                🎉 Love your transformation?
+                                            </div>
+                                            <div className="text-xs text-gray-600 mb-3">
+                                                Unlock unlimited styles, premium colors, and advanced features
+                                            </div>
+                                            <button
+                                                onClick={() => setShowPaymentModal(true)}
+                                                className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white py-2 px-6 rounded-lg font-semibold hover:from-yellow-500 hover:to-orange-600 transition-all shadow-md text-sm flex items-center justify-center mx-auto"
+                                            >
+                                                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clipRule="evenodd" />
+                                                </svg>
+                                                💎 Get Pro Access
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {/* Additional Actions - Expandable */}
+                                <div className="pt-2 border-t border-gray-100">
+                                    <button
+                                        onClick={handleReset}
+                                        className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                                    >
+                                        🔄 Start Over with New Photo
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -2748,16 +2942,16 @@
                     {showPaymentModal && pricingPackages && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                             <div className="bg-white rounded-2xl p-8 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
-                                <div className="text-center mb-8">
-                                    <h3 className="text-3xl font-bold text-gray-800 mb-2">Choose Your StyleAI Package</h3>
-                                    <p className="text-gray-600 text-lg">Professional hairstyle transformations for every need</p>
+                                <div className="text-center mb-6">
+                                    <h3 className="text-2xl font-bold text-gray-800 mb-1">Choose Your StyleAI Package</h3>
+                                    <p className="text-gray-600 text-sm">Professional hairstyle transformations for every need</p>
                                 </div>
 
-                                <div className="grid md:grid-cols-3 gap-6 mb-8">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                                     {Object.values(pricingPackages).map((pkg) => (
                                         <div 
                                             key={pkg.id}
-                                            className={`relative rounded-2xl border-2 p-6 cursor-pointer transition-all duration-200 ${
+                                            className={`relative rounded-xl border-2 p-4 cursor-pointer transition-all duration-200 ${
                                                 selectedPackage === pkg.id 
                                                     ? 'border-purple-500 bg-purple-50 shadow-xl scale-105 ring-2 ring-purple-200' 
                                                     : 'border-gray-200 hover:border-purple-300 hover:shadow-lg hover:scale-102'
@@ -2773,12 +2967,12 @@
                                             )}
                                             
                                             <div className="text-center">
-                                                <h4 className="text-xl font-bold text-gray-800 mb-3">{pkg.name}</h4>
-                                                <div className="mb-4">
-                                                    <span className="text-4xl font-bold text-purple-600">${pkg.price}</span>
-                                                    <span className="text-gray-500 text-sm ml-2">one-time</span>
+                                                <h4 className="text-lg font-bold text-gray-800 mb-2">{pkg.name}</h4>
+                                                <div className="mb-3">
+                                                    <span className="text-3xl font-bold text-purple-600">${pkg.price}</span>
+                                                    <span className="text-gray-500 text-xs ml-1">one-time</span>
                                                 </div>
-                                                <p className="text-gray-600 text-sm mb-6 min-h-[40px]">{pkg.description}</p>
+                                                <p className="text-gray-600 text-xs mb-4 min-h-[30px] leading-tight">{pkg.description}</p>
                                                 
                                                 <div className="space-y-3 text-left">
                                                     <div className="flex items-center justify-center mb-4">
@@ -2786,15 +2980,15 @@
                                                             <span className="text-white font-bold text-lg">{pkg.generations}</span>
                                                         </div>
                                                         <div>
-                                                            <div className="text-lg font-bold text-gray-800">{pkg.generations} Generations</div>
-                                                            <div className="text-xs text-gray-500">{pkg.tokens} tokens included</div>
+                                                            <div className="text-lg font-bold text-gray-800">{pkg.generations} Tokens</div>
+                                                            <div className="text-xs text-gray-500">hair transformations</div>
                                                         </div>
                                                     </div>
                                                     
                                                     {pkg.features.map((feature, index) => (
-                                                        <div key={index} className="flex items-center text-sm text-gray-700">
-                                                            <svg className="w-4 h-4 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
+                                                        <div key={index} className="flex items-center text-xs text-gray-600">
+                                                            <svg className="w-3 h-3 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"/>
                                                             </svg>
                                                             <span>{feature}</span>
                                                         </div>

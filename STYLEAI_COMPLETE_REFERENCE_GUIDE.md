@@ -1429,9 +1429,70 @@ curl -X POST https://web-production-5e40.up.railway.app/api/tokens/deduct \
 
 ---
 
+## 🔄 **VERSION CONTROL & REVERTS**
+
+### **Revert to 094eb8c (January 15, 2025)**
+
+#### **Reason for Revert**
+- isTestMode undefined errors were causing production crashes
+- Multiple fix attempts (429269f, 7ad85ad) were not comprehensive
+- Decided to revert to last known stable state for clean restart
+
+#### **Revert Process**
+```bash
+# Safely stash uncommitted changes
+git stash push -m "Temporary stash before revert to 094eb8c"
+
+# Reset to target commit
+git reset --hard 094eb8c
+
+# Clean up
+rm public/styleai-widget-backup.html
+```
+
+#### **Current State After Revert**
+- ✅ **Commit**: 094eb8c - Production-ready UI improvements
+- ✅ **Status**: Clean working directory, no isTestMode errors
+- ✅ **Features**: Mobile responsiveness, cleaned up console logging
+- ✅ **Stability**: Known working state
+
+#### **Next Steps**
+- Implement changes with proper approach
+- Test thoroughly across all widget variants
+- Follow systematic commit strategy
+
+### **Production UI Cleanup (January 15, 2025)**
+
+#### **Issue**
+- Developer mode buttons were visible in production UI
+- "Enter Developer Mode" and "🧪 Developer Mode" buttons needed removal before production deployment
+- Professional appearance required for live customer usage
+
+#### **Solution Applied**
+```bash
+🚀 PRODUCTION: Remove developer mode UI elements (f365471)
+```
+
+#### **Changes Made**
+- ✅ **User Menu**: Removed developer mode button from dropdown
+- ✅ **Main Interface**: Removed standalone developer mode toggle
+- ✅ **State Management**: Kept `isTestMode` state (always false) for code stability
+- ✅ **Developer Panel**: Hidden but preserved for potential debugging
+
+#### **Technical Implementation**
+- Developer mode UI controls removed but underlying functionality preserved
+- `isTestMode` state remains to avoid breaking existing conditional logic
+- Developer test panel logic maintained but inaccessible via UI
+- Clean, professional interface ready for production deployment
+
+#### **Files Modified**
+- `public/styleai-widget.html`: Removed developer mode UI elements
+
+---
+
 **📚 This guide serves as your complete reference for maintaining, debugging, and extending StyleAI Professional. Keep it updated as you add new features!**
 
 ---
 
-*Last Updated: August 29, 2025*  
-*Version: Production 1.0*
+*Last Updated: January 15, 2025*  
+*Version: Production 1.0 - Post Revert to 094eb8c*

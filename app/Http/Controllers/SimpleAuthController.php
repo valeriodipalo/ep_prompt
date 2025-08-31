@@ -89,12 +89,12 @@ class SimpleAuthController extends Controller
                     ]);
                 }
                 
-                // Get user profile with transformation count
-                $profile = $this->getUserProfile($userId);
+                // Get user profile (created by Supabase trigger) and ensure correct token allocation
+                $profile = $this->ensureUserProfileHasTokens($userId);
                 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Registration successful! You have 10 free transformations.',
+                    'message' => 'Registration successful! You have 2 free generations (10 tokens).',
                     'user' => $user,
                     'profile' => $profile
                 ]);
@@ -167,8 +167,8 @@ class SimpleAuthController extends Controller
                     ], 500);
                 }
                 
-                // Get user profile with transformation count
-                $profile = $this->getUserProfile($user['id']);
+                // Get user profile and ensure correct token allocation
+                $profile = $this->ensureUserProfileHasTokens($user['id']);
                 
                 return response()->json([
                     'success' => true,
@@ -395,27 +395,156 @@ class SimpleAuthController extends Controller
     }
 
     /**
-     * Helper: Consume user transformation
+     * Helper: Consume user transformation (subtract 1 from generations_remaining)
      */
     private function consumeUserTransformation(string $userId)
     {
         try {
+            // Get current profile
+            $profile = $this->getUserProfile($userId);
+            
+            if (!$profile) {
+                Log::error('User profile not found for transformation consumption', ['user_id' => $userId]);
+                return false;
+            }
+            
+            $currentGenerations = $profile['generations_remaining'] ?? 0;
+            
+            // Check if user has generations left
+            if ($currentGenerations <= 0) {
+                Log::info('User has no generations remaining', [
+                    'user_id' => $userId,
+                    'current_generations' => $currentGenerations
+                ]);
+                return false;
+            }
+            
+            // Subtract 1 generation
+            $newGenerations = $currentGenerations - 1;
+            
+            // Update user profile in Supabase
             $response = Http::withHeaders([
                 'apikey' => $this->supabaseServiceKey,
                 'Authorization' => 'Bearer ' . $this->supabaseServiceKey,
                 'Content-Type' => 'application/json'
-            ])->post($this->supabaseUrl . '/rest/v1/rpc/consume_transformation', [
-                'user_id' => $userId
+            ])->patch($this->supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId, [
+                'generations_remaining' => $newGenerations,
+                'updated_at' => now()->toISOString()
             ]);
 
             if ($response->successful()) {
-                return $response->json();
+                Log::info('Generation consumed successfully', [
+                    'user_id' => $userId,
+                    'generations_before' => $currentGenerations,
+                    'generations_after' => $newGenerations
+                ]);
+                
+                // Return updated profile
+                $updatedProfile = array_merge($profile, [
+                    'generations_remaining' => $newGenerations
+                ]);
+                
+                return [
+                    'success' => true,
+                    'profile' => $updatedProfile,
+                    'generations_consumed' => 1,
+                    'generations_remaining' => $newGenerations
+                ];
+            } else {
+                Log::error('Failed to update generations_remaining', [
+                    'user_id' => $userId,
+                    'error' => $response->body()
+                ]);
+                return false;
             }
 
-            return false;
         } catch (\Exception $e) {
             Log::error('Consume transformation exception', ['error' => $e->getMessage()]);
             return false;
+        }
+    }
+
+    /**
+     * Ensure user profile has correct token allocation (relies on Supabase trigger for creation)
+     */
+    private function ensureUserProfileHasTokens(string $userId)
+    {
+        try {
+            // Wait a moment for Supabase trigger to create profile
+            sleep(1);
+            
+            // Get the profile created by Supabase trigger
+            $profile = $this->getUserProfile($userId);
+            
+            if (!$profile) {
+                Log::error('Profile not found after registration', ['user_id' => $userId]);
+                // Return default structure for frontend compatibility
+                return [
+                    'id' => $userId,
+                    'is_premium' => false,
+                    'tokens_remaining' => 10,
+                    'generations_remaining' => 2,
+                    'current_package' => 'free'
+                ];
+            }
+            
+            // Check if profile needs token allocation update
+            $needsUpdate = false;
+            $updateData = [];
+            
+            if (!isset($profile['tokens_remaining']) || $profile['tokens_remaining'] === 0) {
+                $updateData['tokens_remaining'] = 10;
+                $needsUpdate = true;
+            }
+            
+            if (!isset($profile['generations_remaining']) || $profile['generations_remaining'] === 0) {
+                $updateData['generations_remaining'] = 2;
+                $needsUpdate = true;
+            }
+            
+            if (!isset($profile['current_package'])) {
+                $updateData['current_package'] = 'free';
+                $needsUpdate = true;
+            }
+            
+            // Update profile if needed
+            if ($needsUpdate) {
+                $response = Http::withHeaders([
+                    'apikey' => $this->supabaseServiceKey,
+                    'Authorization' => 'Bearer ' . $this->supabaseServiceKey,
+                    'Content-Type' => 'application/json'
+                ])->patch($this->supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId, $updateData);
+                
+                if ($response->successful()) {
+                    Log::info('User profile tokens updated', [
+                        'user_id' => $userId,
+                        'updates' => $updateData
+                    ]);
+                    // Merge updates into profile
+                    $profile = array_merge($profile, $updateData);
+                } else {
+                    Log::error('Failed to update user profile tokens', [
+                        'user_id' => $userId,
+                        'error' => $response->body()
+                    ]);
+                }
+            }
+            
+            return $profile;
+            
+        } catch (\Exception $e) {
+            Log::error('Ensure profile tokens exception', [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
+            // Return default structure
+            return [
+                'id' => $userId,
+                'is_premium' => false,
+                'tokens_remaining' => 10,
+                'generations_remaining' => 2,
+                'current_package' => 'free'
+            ];
         }
     }
 }
