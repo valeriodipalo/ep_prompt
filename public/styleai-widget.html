@@ -776,7 +776,7 @@
                     }
                     
                     const result = await transformResponse.json();
-                    console.log('🎉 Transformation result:', result);
+                    console.log('✅ Generation completed successfully');
                     
                     if (result.success) {
                         // Update the existing transformedImage with real results
@@ -1192,13 +1192,13 @@
             };
 
             return (
-                <div className="max-w-4xl mx-auto">
-                    <div className="styleai-widget bg-white rounded-2xl shadow-2xl p-8 relative">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6">
+                    <div className="styleai-widget bg-white rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 relative">
                     {/* Top Left - Professional User Button */}
-                    <div className="absolute top-6 left-6">
+                    <div className="absolute top-4 left-4 sm:top-6 sm:left-6">
                         {user ? (
                             <div className="relative group">
-                                <button className="flex items-center space-x-3 bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 hover:shadow-xl transition-all duration-200">
+                                <button className="flex items-center space-x-2 sm:space-x-3 bg-white rounded-xl shadow-lg border border-gray-200 px-3 py-2 sm:px-4 sm:py-3 hover:shadow-xl transition-all duration-200">
                                     <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
@@ -1215,7 +1215,7 @@
                                 </button>
                                 
                                 {/* Professional User Menu */}
-                                <div className="absolute left-0 top-16 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                <div className="absolute left-0 top-16 w-56 sm:w-64 bg-white rounded-xl shadow-2xl border border-gray-200 p-3 sm:p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                                     <div className="space-y-4">
                                         <div className="border-b border-gray-100 pb-3">
                                             <div className="text-sm font-semibold text-gray-800">
@@ -2054,7 +2054,7 @@
                                 {/* Popular Presets - Premium Design (Before Color Selection) */}
                                 <div className="mb-8">
                                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Popular Presets</h3>
-                                    <div className="grid grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                         {[
                                             { id: 'honey-balayage', label: 'Honey Balayage', description: 'Brown base with blonde highlights', choice: { type: 'accented', accented: { baseColorId: 'medium-brown', accentColorId: 'golden-blonde', technique: 'balayage', intensity: 'standard', placement: 'face-framing', blend: 'soft' } } },
                                             { id: 'classic-brunette', label: 'Classic Brunette', description: 'Timeless medium brown', choice: { type: 'single-tone', singleTone: { colorId: 'medium-brown' } } },
