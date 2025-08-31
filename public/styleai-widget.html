@@ -2497,9 +2497,20 @@
                     {/* Step 4: Results with Interactive Slider */}
                     {step === 4 && transformedImage && (
                         <div className="text-center relative">
-                            <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
-                                {showLoadingScreen ? 'Creating Your New Look! ✨' : 'Your New Look! ✨'}
-                            </h3>
+                            {/* Enhanced Results Header */}
+                            <div className="mb-6">
+                                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mb-4 shadow-lg">
+                                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                                    {showLoadingScreen ? 'Creating Your New Look!' : 'Your Transformation is Ready!'}
+                                </h3>
+                                <p className="text-gray-600 text-sm">
+                                    {showLoadingScreen ? 'Our AI is working its magic...' : 'Swipe to compare your before and after'}
+                                </p>
+                            </div>
                             
                             {/* Loading Overlay */}
                             {showLoadingScreen && (
@@ -2546,8 +2557,13 @@
                                 </div>
                             )}
                             
-                            {/* Interactive Before/After Slider */}
+                            {/* Enhanced Interactive Before/After Slider */}
                             <div className="relative mb-6">
+                                {/* Before/After Labels */}
+                                <div className="flex justify-between mb-3 px-4">
+                                    <span className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">Before</span>
+                                    <span className="text-sm font-medium text-purple-600 bg-purple-100 px-3 py-1 rounded-full">After ✨</span>
+                                </div>
                                 <div className="relative w-full max-w-sm mx-auto">
                                     {/* Container for images - Dynamic sizing based on image */}
                                     <div 
@@ -2677,25 +2693,120 @@
                                 )}
                             </div>
 
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => {
-                                        const link = document.createElement('a');
-                                        link.href = transformedImage.url;
-                                        link.download = 'styleai-transformation.png';
-                                        link.click();
-                                    }}
-                                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg flex items-center justify-center hover:bg-green-700 transition-colors"
-                                >
-                                    <Download className="h-4 w-4 mr-1" />
-                                    Download
-                                </button>
-                                <button
-                                    onClick={handleReset}
-                                    className="flex-1 border border-purple-600 text-purple-600 py-2 px-4 rounded-lg hover:bg-purple-50 transition-colors"
-                                >
-                                    Try Again
-                                </button>
+                            {/* Enhanced Action Buttons - Mobile Optimized */}
+                            <div className="space-y-3">
+                                {/* Primary Actions Row */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => {
+                                            // Enhanced download with better mobile support
+                                            const canvas = document.createElement('canvas');
+                                            const ctx = canvas.getContext('2d');
+                                            const img = new Image();
+                                            img.crossOrigin = 'anonymous';
+                                            img.onload = () => {
+                                                canvas.width = img.width;
+                                                canvas.height = img.height;
+                                                ctx.drawImage(img, 0, 0);
+                                                
+                                                // Create download
+                                                canvas.toBlob((blob) => {
+                                                    const url = URL.createObjectURL(blob);
+                                                    const link = document.createElement('a');
+                                                    link.href = url;
+                                                    link.download = `styleai-${selectedStyle?.name?.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.png`;
+                                                    document.body.appendChild(link);
+                                                    link.click();
+                                                    document.body.removeChild(link);
+                                                    URL.revokeObjectURL(url);
+                                                    
+                                                    showToast('✅ Image downloaded successfully!', 'success');
+                                                }, 'image/png', 0.9);
+                                            };
+                                            img.src = transformedImage.url;
+                                        }}
+                                        className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-4 rounded-xl flex items-center justify-center hover:from-green-600 hover:to-emerald-700 transition-all font-semibold shadow-lg"
+                                    >
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        Download
+                                    </button>
+                                    
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                // Enhanced mobile share with Web Share API
+                                                if (navigator.share && navigator.canShare) {
+                                                    // Convert image to blob for sharing
+                                                    const response = await fetch(transformedImage.url);
+                                                    const blob = await response.blob();
+                                                    const file = new File([blob], `styleai-transformation-${Date.now()}.png`, { type: 'image/png' });
+                                                    
+                                                    if (navigator.canShare({ files: [file] })) {
+                                                        await navigator.share({
+                                                            title: 'My StyleAI Hair Transformation',
+                                                            text: `Check out my new ${selectedStyle?.name} hairstyle created with StyleAI! 💇‍♀️✨`,
+                                                            files: [file]
+                                                        });
+                                                        showToast('✅ Shared successfully!', 'success');
+                                                    } else {
+                                                        // Fallback to URL sharing
+                                                        await navigator.share({
+                                                            title: 'My StyleAI Hair Transformation',
+                                                            text: `Check out my new ${selectedStyle?.name} hairstyle created with StyleAI! 💇‍♀️✨`,
+                                                            url: window.location.href
+                                                        });
+                                                    }
+                                                } else {
+                                                    // Fallback for desktop - copy to clipboard
+                                                    const shareText = `Check out my new ${selectedStyle?.name} hairstyle created with StyleAI! 💇‍♀️✨ ${window.location.href}`;
+                                                    await navigator.clipboard.writeText(shareText);
+                                                    showToast('📋 Share text copied to clipboard!', 'success');
+                                                }
+                                            } catch (error) {
+                                                console.error('Share failed:', error);
+                                                showToast('❌ Share failed. Please try downloading instead.', 'error');
+                                            }
+                                        }}
+                                        className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 px-4 rounded-xl flex items-center justify-center hover:from-blue-600 hover:to-indigo-700 transition-all font-semibold shadow-lg"
+                                    >
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                                        </svg>
+                                        Share
+                                    </button>
+                                </div>
+                                
+                                {/* Secondary Actions Row */}
+                                <div className="grid grid-cols-1 gap-3">
+                                    <button
+                                        onClick={() => {
+                                            // Reset to style selection but keep the uploaded image
+                                            setStep(2);
+                                            setSelectedStyle(null);
+                                            setGeneratedImages([]);
+                                            setTransformedImage(null);
+                                            showToast('🎨 Choose a new style to try!', 'info');
+                                        }}
+                                        className="bg-gradient-to-r from-purple-500 to-pink-600 text-white py-3 px-6 rounded-xl flex items-center justify-center hover:from-purple-600 hover:to-pink-700 transition-all font-semibold shadow-lg"
+                                    >
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                        </svg>
+                                        Try a New Hairstyle
+                                    </button>
+                                </div>
+                                
+                                {/* Additional Actions - Expandable */}
+                                <div className="pt-2 border-t border-gray-100">
+                                    <button
+                                        onClick={handleReset}
+                                        className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                                    >
+                                        🔄 Start Over with New Photo
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
