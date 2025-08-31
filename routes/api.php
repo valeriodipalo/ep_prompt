@@ -224,3 +224,138 @@ Route::prefix('styles')->group(function () {
     Route::get('/colors/{colorId}', [App\Http\Controllers\StyleController::class, 'getColorById']);
     Route::get('/subscription-plans', [App\Http\Controllers\StyleController::class, 'getSubscriptionPlans']);
 });
+
+// Token management routes
+Route::prefix('tokens')->group(function () {
+    // Deduct tokens for generation (5 tokens per generation)
+    Route::post('/deduct', function(Request $request) {
+        try {
+            $request->validate([
+                'user_id' => 'required|string',
+                'tokens_to_deduct' => 'integer|min:1|max:100'
+            ]);
+
+            $userId = $request->user_id;
+            $tokensToDeduct = $request->tokens_to_deduct ?? 5; // Default 5 tokens per generation
+
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseServiceKey = env('SUPABASE_SERVICE_KEY');
+
+            if (!$supabaseUrl || !$supabaseServiceKey) {
+                return response()->json(['error' => 'Supabase configuration missing'], 500);
+            }
+
+            // First, get current user profile to check available tokens
+            $userResponse = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $supabaseServiceKey,
+                'Content-Type' => 'application/json'
+            ])->get($supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId);
+
+            if (!$userResponse->successful() || empty($userResponse->json())) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            $userProfile = $userResponse->json()[0];
+            $currentTokens = $userProfile['tokens_remaining'] ?? 0;
+            $currentGenerations = $userProfile['generations_remaining'] ?? 0;
+
+            // Check if user has enough tokens
+            if ($currentTokens < $tokensToDeduct) {
+                return response()->json([
+                    'error' => 'Insufficient tokens',
+                    'current_tokens' => $currentTokens,
+                    'required_tokens' => $tokensToDeduct
+                ], 400);
+            }
+
+            $newTokens = $currentTokens - $tokensToDeduct;
+            $newGenerations = max(0, $currentGenerations - 1); // Also deduct 1 generation
+
+            // Update user tokens in Supabase
+            $updateResponse = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $supabaseServiceKey,
+                'Content-Type' => 'application/json',
+                'Prefer' => 'return=minimal'
+            ])->patch($supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId, [
+                'tokens_remaining' => $newTokens,
+                'generations_remaining' => $newGenerations,
+                'updated_at' => now()->toISOString()
+            ]);
+
+            if ($updateResponse->successful()) {
+                Log::info('Tokens deducted successfully', [
+                    'user_id' => $userId,
+                    'tokens_deducted' => $tokensToDeduct,
+                    'tokens_before' => $currentTokens,
+                    'tokens_after' => $newTokens,
+                    'generations_remaining' => $newGenerations
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tokens deducted successfully',
+                    'tokens_deducted' => $tokensToDeduct,
+                    'tokens_remaining' => $newTokens,
+                    'generations_remaining' => $newGenerations
+                ]);
+            } else {
+                return response()->json([
+                    'error' => 'Failed to deduct tokens',
+                    'details' => $updateResponse->body()
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Token deduction failed', [
+                'error' => $e->getMessage(),
+                'user_id' => $request->user_id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'error' => 'Token deduction failed',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    });
+
+    // Check token balance
+    Route::get('/balance/{userId}', function($userId) {
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseServiceKey = env('SUPABASE_SERVICE_KEY');
+
+            if (!$supabaseUrl || !$supabaseServiceKey) {
+                return response()->json(['error' => 'Supabase configuration missing'], 500);
+            }
+
+            // Get current user profile
+            $userResponse = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $supabaseServiceKey,
+                'Content-Type' => 'application/json'
+            ])->get($supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId);
+
+            if (!$userResponse->successful() || empty($userResponse->json())) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            $userProfile = $userResponse->json()[0];
+
+            return response()->json([
+                'success' => true,
+                'tokens_remaining' => $userProfile['tokens_remaining'] ?? 0,
+                'generations_remaining' => $userProfile['generations_remaining'] ?? 0,
+                'current_package' => $userProfile['current_package'] ?? null,
+                'is_premium' => $userProfile['is_premium'] ?? false
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Token balance check failed', [
+                'error' => $e->getMessage(),
+                'user_id' => $userId
+            ]);
+
+            return response()->json([
+                'error' => 'Token balance check failed',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    });
+});

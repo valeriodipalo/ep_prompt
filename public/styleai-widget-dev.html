@@ -630,26 +630,40 @@
                 // Color is optional - users can generate with just hairstyle
                 // No validation needed for color selection
                 
-                // Check if user has enough tokens (for non-premium users, skip in test mode)
-                if (user && userProfile && !userProfile.is_premium && !isTestMode) {
-                    const tokensUsed = userProfile.free_transformations_used || 0;
-                    const tokensRemaining = Math.max(0, 50 - tokensUsed);
+                // 🎯 CHECK TOKENS BEFORE GENERATION (Skip in test mode)
+                const userId = user?.id || userProfile?.id;
+                if (!isTestMode && userId) {
+                    console.log('🔍 DEBUG: Checking token balance before generation');
                     
-                    if (tokensRemaining < 5) {
-                        // Show elegant notification for insufficient tokens
-                        const notification = document.createElement('div');
-                        notification.className = 'fixed top-4 right-4 bg-purple-100 border border-purple-300 text-purple-700 px-4 py-3 rounded-lg shadow-lg z-50';
-                        notification.innerHTML = '💎 Choose a package to continue styling!';
-                        document.body.appendChild(notification);
+                    try {
+                        const tokenCheckResponse = await fetch(`${API_BASE_URL}/api/tokens/balance/${userId}`);
+                        const tokenData = await tokenCheckResponse.json();
                         
-                        setTimeout(() => {
-                            if (notification.parentNode) {
-                                notification.parentNode.removeChild(notification);
-                            }
-                        }, 4000);
+                        if (!tokenData.success) {
+                            throw new Error('Failed to check token balance');
+                        }
                         
-                        // Show pricing modal
-                        setShowPaymentModal(true);
+                        console.log('🔍 DEBUG: Current token balance:', tokenData);
+                        
+                        // Check if user has enough tokens (5 tokens per generation)
+                        if (tokenData.tokens_remaining < 5) {
+                            showToast(`Insufficient tokens! You need 5 tokens per generation. Current balance: ${tokenData.tokens_remaining}`, 'error');
+                            // Show pricing modal
+                            setShowPaymentModal(true);
+                            return;
+                        }
+                        
+                        // Update UI with current token count
+                        if (userProfile) {
+                            setUserProfile(prev => ({
+                                ...prev,
+                                tokens_remaining: tokenData.tokens_remaining,
+                                generations_remaining: tokenData.generations_remaining
+                            }));
+                        }
+                    } catch (error) {
+                        console.error('❌ Token check failed:', error);
+                        showToast('Unable to verify token balance. Please try again.', 'error');
                         return;
                     }
                 }
@@ -745,15 +759,48 @@
                             method: result.method || 'Bulletproof Transform 🛡️'
                         }));
                         
-                        // Deduct 5 tokens for successful generation (only for non-premium users, skip in test mode)
-                        if (user && userProfile && !userProfile.is_premium && !isTestMode) {
-                            setUserProfile(prev => ({
-                                ...prev,
-                                free_transformations_used: (prev.free_transformations_used || 0) + 5
-                            }));
-                            console.log('🎯 5 tokens deducted for transformation');
+                        // 🎯 DEDUCT TOKENS AFTER SUCCESSFUL GENERATION
+                        if (!isTestMode && userId) {
+                            try {
+                                console.log('🔍 DEBUG: Deducting 5 tokens for successful generation');
+                                
+                                const deductResponse = await fetch(`${API_BASE_URL}/api/tokens/deduct`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        user_id: userId,
+                                        tokens_to_deduct: 5
+                                    })
+                                });
+                                
+                                const deductResult = await deductResponse.json();
+                                
+                                if (deductResult.success) {
+                                    console.log('✅ Tokens deducted successfully:', deductResult);
+                                    
+                                    // Update UI with new token count
+                                    setUserProfile(prev => ({
+                                        ...prev,
+                                        tokens_remaining: deductResult.tokens_remaining,
+                                        generations_remaining: deductResult.generations_remaining
+                                    }));
+                                    
+                                    showToast(`Generation complete! ${deductResult.tokens_deducted} tokens used. Remaining: ${deductResult.tokens_remaining}`, 'success');
+                                } else {
+                                    console.error('❌ Token deduction failed:', deductResult);
+                                    // Don't block the user - generation was successful
+                                    showToast('Generation complete! (Token update failed)', 'warning');
+                                }
+                            } catch (error) {
+                                console.error('❌ Token deduction error:', error);
+                                // Don't block the user - generation was successful
+                                showToast('Generation complete! (Token update failed)', 'warning');
+                            }
                         } else if (isTestMode) {
                             console.log('🧪 Test Mode: Skipping token deduction');
+                            showToast('Generation complete! (Test Mode)', 'success');
                         }
                         
                         setIsGenerating(false); // FIX: Stop loading spinner
