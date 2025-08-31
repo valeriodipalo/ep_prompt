@@ -21,7 +21,7 @@ return [
 
     'allowed_origins' => [
         env('FRONTEND_URL', 'http://localhost:8080'),
-        'https://laraver-final-ai-headshot-o6n3.vercel.app',
+        'https://laraver-final-ai-headshot.vercel.app',
         'http://localhost:8080',
         'http://localhost:3000',
         'http://localhost:5173',

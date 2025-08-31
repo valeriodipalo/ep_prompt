@@ -18,7 +18,7 @@
 
 ### **Production URLs**
 ```
-Frontend (Vercel): https://laraver-final-ai-headshot-o6n3.vercel.app/styleai-widget.html
+Frontend (Vercel): https://laraver-final-ai-headshot.vercel.app/styleai-widget.html
 Backend (Railway): https://web-production-5e40.up.railway.app
 Health Check: https://web-production-5e40.up.railway.app/api/health
 Webhook Test: https://web-production-5e40.up.railway.app/api/payments/webhook-test
@@ -814,14 +814,14 @@ const shouldLockParameter = isPremiumParameter && !canAccessPremium && !isHoneyB
 
 #### **Site URL (Supabase Dashboard):**
 ```
-https://laraver-final-ai-headshot-o6n3.vercel.app
+https://laraver-final-ai-headshot.vercel.app
 ```
 
 #### **Redirect URLs (Supabase Dashboard):**
 ```
-https://laraver-final-ai-headshot-o6n3.vercel.app/auth-confirm.html
-https://laraver-final-ai-headshot-o6n3.vercel.app/styleai-widget.html
-https://laraver-final-ai-headshot-o6n3.vercel.app/
+https://laraver-final-ai-headshot.vercel.app/auth-confirm.html
+https://laraver-final-ai-headshot.vercel.app/styleai-widget.html
+https://laraver-final-ai-headshot.vercel.app/
 http://localhost:8080/auth-confirm.html
 http://localhost:8080/styleai-widget.html
 http://localhost:8080/
@@ -1142,12 +1142,12 @@ CREATE TABLE payments (
 **Fix Steps:**
 1. **Go to [Supabase Dashboard](https://supabase.com/dashboard/project/nxxznqnrxomzudghktrz)**
 2. **Authentication → URL Configuration**
-3. **Set Site URL:** `https://laraver-final-ai-headshot-o6n3.vercel.app`
+3. **Set Site URL:** `https://laraver-final-ai-headshot.vercel.app`
 4. **Add Redirect URLs:**
    ```
-   https://laraver-final-ai-headshot-o6n3.vercel.app/auth-confirm.html
-   https://laraver-final-ai-headshot-o6n3.vercel.app/styleai-widget.html
-   https://laraver-final-ai-headshot-o6n3.vercel.app/
+   https://laraver-final-ai-headshot.vercel.app/auth-confirm.html
+   https://laraver-final-ai-headshot.vercel.app/styleai-widget.html
+   https://laraver-final-ai-headshot.vercel.app/
    http://localhost:8080/auth-confirm.html
    http://localhost:8080/styleai-widget.html
    http://localhost:8080/

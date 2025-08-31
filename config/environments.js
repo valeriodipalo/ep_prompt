@@ -20,7 +20,7 @@ const environments = {
   
   // Production
   production: {
-    frontend: 'https://laraver-final-ai-headshot-o6n3.vercel.app',
+    frontend: 'https://laraver-final-ai-headshot.vercel.app',
     backend: 'https://web-production-5e40.up.railway.app',
     name: 'Production',
     debug: false

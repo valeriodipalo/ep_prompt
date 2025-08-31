@@ -15,7 +15,7 @@
 - **Purpose**: Pre-production testing
 
 ### **Production Environment**
-- **Frontend**: `https://laraver-final-ai-headshot-o6n3.vercel.app/styleai-widget.html`
+- **Frontend**: `https://laraver-final-ai-headshot.vercel.app/styleai-widget.html`
 - **Backend**: `https://web-production-5e40.up.railway.app`
 - **Database**: Supabase Production
 - **Purpose**: Live customer usage
@@ -58,7 +58,7 @@ git push origin 10.x
 - **Features**: All debugging tools enabled
 
 ### **Production** 
-- **Widget**: `https://laraver-final-ai-headshot-o6n3.vercel.app/styleai-widget.html`
+- **Widget**: `https://laraver-final-ai-headshot.vercel.app/styleai-widget.html`
 - **Backend**: `https://web-production-5e40.up.railway.app`
 - **Features**: Clean user experience, minimal debugging
 

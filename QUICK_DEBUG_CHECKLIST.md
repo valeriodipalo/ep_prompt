@@ -5,7 +5,7 @@
 ### **App Not Loading**
 ```bash
 # Check these URLs in order:
-✅ https://laraver-final-ai-headshot-o6n3.vercel.app/styleai-widget.html (Frontend)
+✅ https://laraver-final-ai-headshot.vercel.app/styleai-widget.html (Frontend)
 ✅ https://web-production-5e40.up.railway.app/api/health (Backend)
 ✅ https://web-production-5e40.up.railway.app/api/payments/webhook-test (Stripe)
 ```
@@ -61,7 +61,7 @@ testConnection();
 ```
 APP_KEY=base64:Y0Rgc2PX3vssQxw/JcgWYZhtnYuW9JE016fec0TjXh8=
 APP_URL=https://web-production-5e40.up.railway.app
-FRONTEND_URL=https://laraver-final-ai-headshot-o6n3.vercel.app
+FRONTEND_URL=https://laraver-final-ai-headshot.vercel.app
 FAL_KEY=4d4f3d66-f99b-48b9-9b3b-af0ca1668c2f:34f7573ed94f9d2123d653f962c8bc42
 SUPABASE_URL=https://nxxznqnrxomzudghktrz.supabase.co
 STRIPE_SECRET=sk_test_your_key (or sk_live_)
