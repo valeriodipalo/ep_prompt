@@ -332,6 +332,17 @@ POST /api/auth/login               - User login
 GET  /api/auth/profile             - Get user profile
 GET  /api/auth/can-transform       - Check transformation credits
 POST /api/auth/consume-transformation - Consume transformation credit
+POST /api/auth/test-token-update   - Test token update (debugging)
+```
+
+### **Token Management (NEW)**
+```
+POST /api/tokens/deduct            - Deduct tokens for generation (5 tokens per generation)
+     Parameters: { user_id, tokens_to_deduct (default: 5) }
+     Response: { success, tokens_remaining, generations_remaining }
+     
+GET  /api/tokens/balance/{userId}  - Check user token balance
+     Response: { tokens_remaining, generations_remaining, current_package, is_premium }
 ```
 
 ### **AI Transformations (fal.ai)**
@@ -1309,6 +1320,71 @@ export default defineConfig({
    - Track API response times
    - Monitor image generation success rates
    - Watch for CORS or authentication issues
+
+---
+
+## 🪙 **TOKEN DEDUCTION SYSTEM**
+
+### **Implementation Overview**
+The token system deducts **5 tokens per generation** and provides real-time balance updates.
+
+### **Flow Process**
+1. **Pre-Generation Check**: Validate user has ≥5 tokens
+2. **Generation Process**: Execute AI transformation
+3. **Post-Generation**: Deduct 5 tokens on success
+4. **UI Update**: Display new token balance with toast notification
+
+### **Backend Logic**
+```php
+// Token deduction endpoint: POST /api/tokens/deduct
+- Validates user exists in Supabase
+- Checks sufficient token balance
+- Deducts tokens atomically
+- Updates both tokens_remaining and generations_remaining
+- Returns updated balance
+```
+
+### **Frontend Integration**
+```javascript
+// Pre-generation validation
+const tokenCheck = await fetch(`${API_BASE_URL}/api/tokens/balance/${userId}`);
+if (tokenData.tokens_remaining < 5) {
+    showToast('Insufficient tokens!', 'error');
+    return;
+}
+
+// Post-generation deduction
+const deductResponse = await fetch(`${API_BASE_URL}/api/tokens/deduct`, {
+    method: 'POST',
+    body: JSON.stringify({ user_id: userId, tokens_to_deduct: 5 })
+});
+```
+
+### **Error Handling**
+- **Insufficient Tokens**: Shows pricing modal
+- **Network Errors**: Non-blocking warnings (generation still succeeds)
+- **Test Mode**: Bypasses all token operations
+- **API Failures**: Graceful degradation with user notifications
+
+### **Database Schema**
+```sql
+user_profiles table:
+- tokens_remaining: INTEGER (decremented by 5 per generation)
+- generations_remaining: INTEGER (decremented by 1 per generation)
+- current_package: TEXT (starter/creator/salon)
+- package_purchased_at: TIMESTAMP
+```
+
+### **Testing Commands**
+```bash
+# Check token balance
+curl https://web-production-5e40.up.railway.app/api/tokens/balance/{userId}
+
+# Manually deduct tokens
+curl -X POST https://web-production-5e40.up.railway.app/api/tokens/deduct \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user123", "tokens_to_deduct": 5}'
+```
 
 ---
 
