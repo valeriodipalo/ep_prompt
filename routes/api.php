@@ -248,7 +248,8 @@ Route::prefix('tokens')->group(function () {
             // First, get current user profile to check available tokens
             $userResponse = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $supabaseServiceKey,
-                'Content-Type' => 'application/json'
+                'Content-Type' => 'application/json',
+                'apikey' => $supabaseServiceKey
             ])->get($supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId);
 
             if (!$userResponse->successful() || empty($userResponse->json())) {
@@ -275,6 +276,7 @@ Route::prefix('tokens')->group(function () {
             $updateResponse = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $supabaseServiceKey,
                 'Content-Type' => 'application/json',
+                'apikey' => $supabaseServiceKey,
                 'Prefer' => 'return=minimal'
             ])->patch($supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId, [
                 'tokens_remaining' => $newTokens,
@@ -330,7 +332,8 @@ Route::prefix('tokens')->group(function () {
             // Try to find user by ID
             $userResponse = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $supabaseServiceKey,
-                'Content-Type' => 'application/json'
+                'Content-Type' => 'application/json',
+                'apikey' => $supabaseServiceKey
             ])->get($supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId);
 
             return response()->json([
@@ -364,7 +367,8 @@ Route::prefix('tokens')->group(function () {
             // Get current user profile
             $userResponse = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $supabaseServiceKey,
-                'Content-Type' => 'application/json'
+                'Content-Type' => 'application/json',
+                'apikey' => $supabaseServiceKey
             ])->get($supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId);
 
             if (!$userResponse->successful() || empty($userResponse->json())) {
