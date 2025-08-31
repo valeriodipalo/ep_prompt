@@ -149,7 +149,7 @@
             const [isAuthenticating, setIsAuthenticating] = React.useState(false);
             const [showPaymentModal, setShowPaymentModal] = React.useState(false);
             const [isProcessingPayment, setIsProcessingPayment] = React.useState(false);
-            const [isTestMode, setIsTestMode] = React.useState(false);
+            // Test mode disabled in production
             
             // Welcome banner states
             const [showWelcomeBanner, setShowWelcomeBanner] = React.useState(false);
@@ -660,15 +660,15 @@
                     ? 'http://localhost:8001'
                     : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                 
-                console.log('🔍 DEBUG: Using API_BASE_URL:', API_BASE_URL);
+                // Production: Clean console logging
                 
-                // 🎯 CHECK TOKENS BEFORE GENERATION (Skip in test mode)
+                // 🎯 CHECK TOKENS BEFORE GENERATION
                 const userId = user?.id || userProfile?.id;
-                if (!isTestMode && userId) {
-                    console.log('🔍 DEBUG: Checking token balance before generation');
+                if (userId) {
+                    // Checking token balance...
                     
                     try {
-                        console.log('🔍 DEBUG: Making token balance request to:', `${API_BASE_URL}/api/tokens/balance/${userId}`);
+                        // Making token balance request...
                         const tokenCheckResponse = await fetch(`${API_BASE_URL}/api/tokens/balance/${userId}`);
                         const tokenData = await tokenCheckResponse.json();
                         
@@ -788,9 +788,9 @@
                         }));
                         
                         // 🎯 DEDUCT TOKENS AFTER SUCCESSFUL GENERATION
-                        if (!isTestMode && userId) {
+                        if (userId) {
                             try {
-                                console.log('🔍 DEBUG: Deducting 5 tokens for successful generation');
+                                // Deducting tokens...
                                 
                                 const deductResponse = await fetch(`${API_BASE_URL}/api/tokens/deduct`, {
                                     method: 'POST',
@@ -826,9 +826,6 @@
                                 // Don't block the user - generation was successful
                                 showToast('Generation complete! (Token update failed)', 'warning');
                             }
-                        } else if (isTestMode) {
-                            console.log('🧪 Test Mode: Skipping token deduction');
-                            showToast('Generation complete! (Test Mode)', 'success');
                         }
                         
                         setIsGenerating(false); // FIX: Stop loading spinner
