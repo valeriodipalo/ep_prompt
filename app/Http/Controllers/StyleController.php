@@ -17,26 +17,360 @@ use Illuminate\Http\JsonResponse;
 class StyleController extends Controller
 {
     /**
-     * Get available hairstyles with freemium model
+     * Get available hairstyles with gender-specific categorized model
      */
     public function getStyles(Request $request): JsonResponse
     {
         $isPremium = $request->boolean('is_premium', false);
         $category = $request->query('category');
+        $gender = $request->query('gender', 'male'); // Default to male for backward compatibility
 
-        $styles = [
-            // ========== ANCHOR STYLES (FREE) ==========
-            [
-                'id' => 'fade_low',
-                'name' => 'Low Fade',
-                'description' => 'Clean low fade with gradual transition',
-                'category' => 'Short',
-                'complexity' => 'medium',
-                'is_free' => true,
-                'preview_url' => '/images/styles/fade_low.jpg',
-                'default_colors' => ['black', 'dark-brown', 'medium-brown', 'blonde'],
-                'prompt_template' => 'low fade haircut with gradual transition'
+        // Gender-specific categorized styles
+        $allStyles = [
+            'female' => [
+                // ========== SHORT STYLES ==========
+                [
+                    'id' => 'pixie_cut',
+                    'name' => 'Pixie Cut',
+                    'description' => 'Very short, chic, low-maintenance',
+                    'category' => 'short-styles',
+                    'gender' => 'female',
+                    'is_free' => true,
+                    'preview_url' => '/images/styles/female/pixie_cut.jpg',
+                    'prompt_template' => 'pixie cut'
+                ],
+                [
+                    'id' => 'bob',
+                    'name' => 'Classic Bob',
+                    'description' => 'Cut at jawline, sharp and sleek',
+                    'category' => 'short-styles',
+                    'gender' => 'female',
+                    'is_free' => true,
+                    'preview_url' => '/images/styles/female/bob.jpg',
+                    'prompt_template' => 'bob'
+                ],
+                [
+                    'id' => 'lob',
+                    'name' => 'Long Bob',
+                    'description' => 'Shoulder-length, very popular',
+                    'category' => 'short-styles',
+                    'gender' => 'female',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/female/lob.jpg',
+                    'prompt_template' => 'lob'
+                ],
+                
+                // ========== MEDIUM STYLES ==========
+                [
+                    'id' => 'layered_cut',
+                    'name' => 'Layered Cut',
+                    'description' => 'Adds movement and volume',
+                    'category' => 'medium-styles',
+                    'gender' => 'female',
+                    'is_free' => true,
+                    'preview_url' => '/images/styles/female/layered_cut.jpg',
+                    'prompt_template' => 'layered cut'
+                ],
+                [
+                    'id' => 'shag_cut',
+                    'name' => 'Shag Cut',
+                    'description' => 'Choppy layers, rock-inspired',
+                    'category' => 'medium-styles',
+                    'gender' => 'female',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/female/shag_cut.jpg',
+                    'prompt_template' => 'shag cut'
+                ],
+                [
+                    'id' => 'curtain_bangs',
+                    'name' => 'Curtain Bangs',
+                    'description' => 'Parted fringe framing face',
+                    'category' => 'medium-styles',
+                    'gender' => 'female',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/female/curtain_bangs.jpg',
+                    'prompt_template' => 'curtain bangs'
+                ],
+                [
+                    'id' => 'shoulder_waves',
+                    'name' => 'Shoulder-Length Waves',
+                    'description' => 'Versatile beachy waves',
+                    'category' => 'medium-styles',
+                    'gender' => 'female',
+                    'is_free' => true,
+                    'preview_url' => '/images/styles/female/shoulder_waves.jpg',
+                    'prompt_template' => 'shoulder-length waves'
+                ],
+                
+                // ========== LONG STYLES ==========
+                [
+                    'id' => 'straight_long',
+                    'name' => 'Straight Long Hair',
+                    'description' => 'Simple, polished',
+                    'category' => 'long-styles',
+                    'gender' => 'female',
+                    'is_free' => true,
+                    'preview_url' => '/images/styles/female/straight_long.jpg',
+                    'prompt_template' => 'straight long hair'
+                ],
+                [
+                    'id' => 'layered_long',
+                    'name' => 'Layered Long Hair',
+                    'description' => 'Creates volume and flow',
+                    'category' => 'long-styles',
+                    'gender' => 'female',
+                    'is_free' => true,
+                    'preview_url' => '/images/styles/female/layered_long.jpg',
+                    'prompt_template' => 'layered long hair'
+                ],
+                [
+                    'id' => 'ponytail',
+                    'name' => 'Ponytail',
+                    'description' => 'High or low, elegant',
+                    'category' => 'long-styles',
+                    'gender' => 'female',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/female/ponytail.jpg',
+                    'prompt_template' => 'ponytail'
+                ],
+                [
+                    'id' => 'braids',
+                    'name' => 'Braids',
+                    'description' => 'Single, double, box braids',
+                    'category' => 'long-styles',
+                    'gender' => 'female',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/female/braids.jpg',
+                    'prompt_template' => 'braids'
+                ],
+                [
+                    'id' => 'beach_waves',
+                    'name' => 'Beach Waves',
+                    'description' => 'Loose textured waves',
+                    'category' => 'long-styles',
+                    'gender' => 'female',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/female/beach_waves.jpg',
+                    'prompt_template' => 'beach waves'
+                ],
+                [
+                    'id' => 'hollywood_waves',
+                    'name' => 'Hollywood Waves',
+                    'description' => 'Glamorous, defined curls',
+                    'category' => 'long-styles',
+                    'gender' => 'female',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/female/hollywood_waves.jpg',
+                    'prompt_template' => 'hollywood waves'
+                ],
+                
+                // ========== CURLY & TEXTURED ==========
+                [
+                    'id' => 'afro_female',
+                    'name' => 'Afro',
+                    'description' => 'Rounded natural curls, bold',
+                    'category' => 'curly-textured',
+                    'gender' => 'female',
+                    'is_free' => true,
+                    'preview_url' => '/images/styles/female/afro.jpg',
+                    'prompt_template' => 'afro'
+                ],
+                [
+                    'id' => 'natural_curls',
+                    'name' => 'Natural Curls',
+                    'description' => 'Free-flowing layered curls',
+                    'category' => 'curly-textured',
+                    'gender' => 'female',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/female/natural_curls.jpg',
+                    'prompt_template' => 'natural curls'
+                ],
+                [
+                    'id' => 'twists_female',
+                    'name' => 'Twists',
+                    'description' => 'Protective styling, versatile',
+                    'category' => 'curly-textured',
+                    'gender' => 'female',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/female/twists.jpg',
+                    'prompt_template' => 'twists'
+                ]
             ],
+            'male' => [
+                // ========== SHORT CLASSICS ==========
+                [
+                    'id' => 'buzz_cut',
+                    'name' => 'Buzz Cut',
+                    'description' => 'Ultra-short, military style',
+                    'category' => 'short-classics',
+                    'gender' => 'male',
+                    'is_free' => true,
+                    'preview_url' => '/images/styles/male/buzz_cut.jpg',
+                    'prompt_template' => 'buzz cut'
+                ],
+                [
+                    'id' => 'crew_cut',
+                    'name' => 'Crew Cut',
+                    'description' => 'Short sides, neat top',
+                    'category' => 'short-classics',
+                    'gender' => 'male',
+                    'is_free' => true,
+                    'preview_url' => '/images/styles/male/crew_cut.jpg',
+                    'prompt_template' => 'crew cut'
+                ],
+                [
+                    'id' => 'french_crop',
+                    'name' => 'French Crop',
+                    'description' => 'Short with straight fringe',
+                    'category' => 'short-classics',
+                    'gender' => 'male',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/male/french_crop.jpg',
+                    'prompt_template' => 'french crop'
+                ],
+                
+                // ========== MEDIUM STYLES ==========
+                [
+                    'id' => 'side_part',
+                    'name' => 'Side Part',
+                    'description' => 'Timeless professional look',
+                    'category' => 'medium-styles',
+                    'gender' => 'male',
+                    'is_free' => true,
+                    'preview_url' => '/images/styles/male/side_part.jpg',
+                    'prompt_template' => 'side part'
+                ],
+                [
+                    'id' => 'pompadour',
+                    'name' => 'Pompadour',
+                    'description' => 'Voluminous top, slicked up',
+                    'category' => 'medium-styles',
+                    'gender' => 'male',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/male/pompadour.jpg',
+                    'prompt_template' => 'pompadour'
+                ],
+                [
+                    'id' => 'textured_crop',
+                    'name' => 'Textured Crop',
+                    'description' => 'Choppy layers, modern',
+                    'category' => 'medium-styles',
+                    'gender' => 'male',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/male/textured_crop.jpg',
+                    'prompt_template' => 'textured crop'
+                ],
+                [
+                    'id' => 'bro_flow',
+                    'name' => 'Bro Flow',
+                    'description' => 'Natural flow backward',
+                    'category' => 'medium-styles',
+                    'gender' => 'male',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/male/bro_flow.jpg',
+                    'prompt_template' => 'bro flow'
+                ],
+                
+                // ========== LONG STYLES ==========
+                [
+                    'id' => 'man_bun',
+                    'name' => 'Man Bun',
+                    'description' => 'Tied back, popular',
+                    'category' => 'long-styles',
+                    'gender' => 'male',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/male/man_bun.jpg',
+                    'prompt_template' => 'man bun'
+                ],
+                [
+                    'id' => 'shoulder_flow',
+                    'name' => 'Shoulder-Length Flow',
+                    'description' => 'Natural, layered',
+                    'category' => 'long-styles',
+                    'gender' => 'male',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/male/shoulder_flow.jpg',
+                    'prompt_template' => 'shoulder-length flow'
+                ],
+                
+                // ========== FADES & UNDERCUTS ==========
+                [
+                    'id' => 'low_fade',
+                    'name' => 'Low Fade',
+                    'description' => 'Gradual taper, trendy',
+                    'category' => 'fades-undercuts',
+                    'gender' => 'male',
+                    'is_free' => true,
+                    'preview_url' => '/images/styles/male/low_fade.jpg',
+                    'prompt_template' => 'low fade'
+                ],
+                [
+                    'id' => 'mid_fade',
+                    'name' => 'Mid Fade',
+                    'description' => 'Clean mid-level fade',
+                    'category' => 'fades-undercuts',
+                    'gender' => 'male',
+                    'is_free' => true,
+                    'preview_url' => '/images/styles/male/mid_fade.jpg',
+                    'prompt_template' => 'mid fade'
+                ],
+                [
+                    'id' => 'high_fade',
+                    'name' => 'High Fade',
+                    'description' => 'Sharp contrast',
+                    'category' => 'fades-undercuts',
+                    'gender' => 'male',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/male/high_fade.jpg',
+                    'prompt_template' => 'high fade'
+                ],
+                [
+                    'id' => 'undercut',
+                    'name' => 'Disconnected Undercut',
+                    'description' => 'Sharp contrast, long top',
+                    'category' => 'fades-undercuts',
+                    'gender' => 'male',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/male/undercut.jpg',
+                    'prompt_template' => 'undercut'
+                ],
+                
+                // ========== CURLY & TEXTURED ==========
+                [
+                    'id' => 'afro_male',
+                    'name' => 'Afro',
+                    'description' => 'Natural rounded curls',
+                    'category' => 'curly-textured',
+                    'gender' => 'male',
+                    'is_free' => true,
+                    'preview_url' => '/images/styles/male/afro.jpg',
+                    'prompt_template' => 'afro'
+                ],
+                [
+                    'id' => 'curly_fade',
+                    'name' => 'Curly Top Fade',
+                    'description' => 'Defined curls, faded sides',
+                    'category' => 'curly-textured',
+                    'gender' => 'male',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/male/curly_fade.jpg',
+                    'prompt_template' => 'curly top fade'
+                ],
+                [
+                    'id' => 'dreadlocks_male',
+                    'name' => 'Dreadlocks',
+                    'description' => 'Rope-like strands',
+                    'category' => 'curly-textured',
+                    'gender' => 'male',
+                    'is_free' => false,
+                    'preview_url' => '/images/styles/male/dreadlocks.jpg',
+                    'prompt_template' => 'dreadlocks'
+                ]
+            ]
+        ];
+        
+        // Get styles for selected gender
+        $styles = $allStyles[$gender] ?? [
             [
                 'id' => 'fade_mid',
                 'name' => 'Mid Fade',
@@ -284,10 +618,28 @@ class StyleController extends Controller
             });
         }
 
+        // Get gender-specific categories
+        $genderCategories = [
+            'female' => [
+                ['key' => 'short-styles', 'label' => 'Short Styles', 'emoji' => '✂️'],
+                ['key' => 'medium-styles', 'label' => 'Medium Styles', 'emoji' => '🌸'],
+                ['key' => 'long-styles', 'label' => 'Long Styles', 'emoji' => '👸'],
+                ['key' => 'curly-textured', 'label' => 'Curly & Textured', 'emoji' => '🌀']
+            ],
+            'male' => [
+                ['key' => 'short-classics', 'label' => 'Short Classics', 'emoji' => '✂️'],
+                ['key' => 'medium-styles', 'label' => 'Medium Styles', 'emoji' => '🌸'],
+                ['key' => 'long-styles', 'label' => 'Long Styles', 'emoji' => '👸'],
+                ['key' => 'fades-undercuts', 'label' => 'Fades & Undercuts', 'emoji' => '⚡'],
+                ['key' => 'curly-textured', 'label' => 'Curly & Textured', 'emoji' => '🌀']
+            ]
+        ];
+
         return response()->json([
             'success' => true,
             'styles' => array_values($filteredStyles),
-            'categories' => ['Short', 'Medium', 'Long', 'Professional', 'Trendy', 'Cultural_Identity', 'No_Hair'],
+            'categories' => $genderCategories[$gender] ?? [],
+            'gender' => $gender,
             'total_styles' => count($styles),
             'available_styles' => count($filteredStyles),
             'free_styles' => count(array_filter($styles, fn($s) => $s['is_free'])),

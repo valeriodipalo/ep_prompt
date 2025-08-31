@@ -1058,9 +1058,9 @@
                     : 'https://web-production-5e40.up.railway.app'; // Railway backend URL
                     const isPremium = userProfile?.is_premium || false;
                     
-                    // Load styles
-                    const stylesResponse = await fetch(`${API_BASE_URL}/api/styles/hairstyles?is_premium=${isPremium}`);
-                    const stylesData = await stylesResponse.json();
+                                         // Load styles with gender parameter
+                     const stylesResponse = await fetch(`${API_BASE_URL}/api/styles/hairstyles?is_premium=${isPremium}&gender=${selectedGender || 'male'}`);
+                     const stylesData = await stylesResponse.json();
                     
                     if (stylesData.success) {
                         setHairstyles(stylesData.styles);
@@ -1093,10 +1093,12 @@
                 }
             };
 
-            // Load styles when component mounts or user premium status changes
+            // Load styles when component mounts, user premium status changes, or gender changes
             React.useEffect(() => {
-                loadStylesAndColors();
-            }, [userProfile?.is_premium]);
+                if (selectedGender) {
+                    loadStylesAndColors();
+                }
+            }, [userProfile?.is_premium, selectedGender]);
 
             // Payment processing function
             const handlePremiumUpgrade = async () => {
@@ -1938,15 +1940,15 @@
                                         </button>
                                         {styleCategories.map((category) => (
                                             <button
-                                                key={category}
-                                                onClick={() => setSelectedStyleCategory(category)}
+                                                key={category.key || category}
+                                                onClick={() => setSelectedStyleCategory(category.key || category)}
                                                 className={`px-3 py-1 rounded-full text-xs transition-colors ${
-                                                    selectedStyleCategory === category
+                                                    selectedStyleCategory === (category.key || category)
                                                         ? 'bg-purple-500 text-white'
                                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                 }`}
                                             >
-                                                {category.replace('_', ' ')}
+                                                {category.emoji || ''} {category.label || category.replace('_', ' ')}
                                             </button>
                                         ))}
                                     </div>

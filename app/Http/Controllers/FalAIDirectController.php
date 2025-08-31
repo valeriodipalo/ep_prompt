@@ -99,66 +99,131 @@ class FalAIDirectController extends Controller
     }
 
     /**
-     * Create hairstyle prompt based on user selections
+     * Create enhanced hairstyle prompt based on user selections
+     * Supports both basic and professional (accented) color transformations
      */
     private function createHairstylePrompt($gender, $hairstyle, $color)
     {
-        $prompts = [
+        // Check if this is a professional color transformation
+        $isProfessionalColor = $this->isProfessionalColorTransformation($color);
+        
+        if ($isProfessionalColor) {
+            return $this->createProfessionalPrompt($gender, $hairstyle, $color);
+        } else {
+            return $this->createBasicPrompt($gender, $hairstyle, $color);
+        }
+    }
+
+    /**
+     * Check if color choice involves professional techniques
+     */
+    private function isProfessionalColorTransformation($color)
+    {
+        $professionalKeywords = ['balayage', 'highlights', 'lowlights', 'ombre', 'babylights', 'color-melt', 'with'];
+        
+        foreach ($professionalKeywords as $keyword) {
+            if (stripos($color, $keyword) !== false) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Create basic prompt for simple color transformations
+     */
+    private function createBasicPrompt($gender, $hairstyle, $color)
+    {
+        $basicPrompts = [
             'female' => [
-                'short' => [
-                    'blonde' => 'Transform this person to have a short blonde bob haircut with modern styling',
-                    'brown' => 'Transform this person to have a short brown pixie cut with contemporary styling',
-                    'black' => 'Transform this person to have a short black bob with sleek styling',
-                    'red' => 'Transform this person to have a short red bob with vibrant color and modern cut',
-                    'purple' => 'Transform this person to have a short purple bob with vibrant color',
-                    'blue' => 'Transform this person to have a short blue bob with vibrant color',
-                ],
-                'medium' => [
-                    'blonde' => 'Transform this person to have medium-length blonde hair with layers and highlights',
-                    'brown' => 'Transform this person to have medium-length brown hair with soft waves and natural color',
-                    'black' => 'Transform this person to have medium-length black hair with sleek styling',
-                    'red' => 'Transform this person to have medium-length red hair with vibrant color and waves',
-                    'purple' => 'Transform this person to have medium-length purple hair with vibrant color',
-                    'blue' => 'Transform this person to have medium-length blue hair with vibrant color',
-                ],
-                'long' => [
-                    'blonde' => 'Transform this person to have long blonde hair with flowing waves and highlights',
-                    'brown' => 'Transform this person to have long brown hair with flowing waves and natural shine',
-                    'black' => 'Transform this person to have long black hair with sleek straight styling',
-                    'red' => 'Transform this person to have long red hair with flowing waves and vibrant color',
-                    'purple' => 'Transform this person to have long purple hair with flowing waves and vibrant color',
-                    'blue' => 'Transform this person to have long blue hair with flowing waves and vibrant color',
-                ]
+                // Short Styles
+                'pixie cut' => "Transform this person to have a chic pixie cut with {$color} color, very short and stylish",
+                'bob' => "Transform this person to have a classic bob haircut with {$color} color, cut at jawline",
+                'lob' => "Transform this person to have a long bob (lob) with {$color} color, shoulder-length and sleek",
+                
+                // Medium-Length Styles  
+                'layered cut' => "Transform this person to have a layered medium-length cut with {$color} color and movement",
+                'shag cut' => "Transform this person to have a shag cut with {$color} color, choppy layers and texture",
+                'curtain bangs' => "Transform this person to have curtain bangs with {$color} color, parted fringe framing face",
+                'shoulder-length waves' => "Transform this person to have shoulder-length wavy hair with {$color} color",
+                
+                // Long Styles
+                'straight long hair' => "Transform this person to have straight long hair with {$color} color, sleek and polished",
+                'layered long hair' => "Transform this person to have long layered hair with {$color} color and flowing volume",
+                'ponytail' => "Transform this person to have hair styled in a ponytail with {$color} color",
+                'braids' => "Transform this person to have braided hair with {$color} color, protective styling",
+                'beach waves' => "Transform this person to have long beach waves with {$color} color, natural texture",
+                'hollywood waves' => "Transform this person to have glamorous Hollywood waves with {$color} color",
+                
+                // Curly & Textured
+                'afro' => "Transform this person to have a natural afro with {$color} color, rounded and voluminous",
+                'natural curls' => "Transform this person to have natural curly hair with {$color} color, free-flowing",
+                'twists' => "Transform this person to have twisted hair with {$color} color, protective styling"
             ],
             'male' => [
-                'short' => [
-                    'blonde' => 'Transform this person to have a short, modern blonde haircut with clean sides and styled top',
-                    'brown' => 'Transform this person to have a short, modern brown haircut with clean sides and styled top',
-                    'black' => 'Transform this person to have a short, modern black haircut with fade sides and textured top',
-                    'red' => 'Transform this person to have a short, modern red haircut with clean sides and styled top',
-                    'purple' => 'Transform this person to have a short, modern purple haircut with clean sides and styled top',
-                    'blue' => 'Transform this person to have a short, modern blue haircut with clean sides and styled top',
-                ],
-                'medium' => [
-                    'blonde' => 'Transform this person to have medium-length blonde hair with modern styling and texture',
-                    'brown' => 'Transform this person to have medium-length brown hair with modern styling and texture',
-                    'black' => 'Transform this person to have medium-length black hair with contemporary cut and styling',
-                    'red' => 'Transform this person to have medium-length red hair with modern styling and texture',
-                    'purple' => 'Transform this person to have medium-length purple hair with modern styling and texture',
-                    'blue' => 'Transform this person to have medium-length blue hair with modern styling and texture',
-                ],
-                'long' => [
-                    'blonde' => 'Transform this person to have long blonde hair with flowing style',
-                    'brown' => 'Transform this person to have long brown hair with natural flowing style',
-                    'black' => 'Transform this person to have long black hair with sleek flowing style',
-                    'red' => 'Transform this person to have long red hair with flowing vibrant style',
-                    'purple' => 'Transform this person to have long purple hair with flowing vibrant style',
-                    'blue' => 'Transform this person to have long blue hair with flowing vibrant style',
-                ]
+                // Short Classics
+                'buzz cut' => "Transform this person to have a buzz cut with {$color} color, ultra-short military style",
+                'crew cut' => "Transform this person to have a crew cut with {$color} color, short sides and neat top",
+                'french crop' => "Transform this person to have a French crop with {$color} color and straight fringe",
+                
+                // Medium-Length Styles
+                'side part' => "Transform this person to have a side part hairstyle with {$color} color, professional look",
+                'pompadour' => "Transform this person to have a pompadour with {$color} color, voluminous and slicked up",
+                'textured crop' => "Transform this person to have a textured crop with {$color} color, modern messy style",
+                'bro flow' => "Transform this person to have a bro flow with {$color} color, medium length flowing back",
+                
+                // Long Styles
+                'man bun' => "Transform this person to have a man bun with {$color} color, long hair tied back",
+                'shoulder-length flow' => "Transform this person to have shoulder-length flowing hair with {$color} color",
+                
+                // Fades & Undercuts
+                'low fade' => "Transform this person to have a low fade with {$color} color, gradual taper",
+                'mid fade' => "Transform this person to have a mid fade with {$color} color, clean sides",
+                'high fade' => "Transform this person to have a high fade with {$color} color, sharp contrast",
+                'undercut' => "Transform this person to have an undercut with {$color} color, long top and shaved sides",
+                
+                // Curly & Textured
+                'afro' => "Transform this person to have a natural afro with {$color} color, rounded curls",
+                'curly top fade' => "Transform this person to have curly top fade with {$color} color, defined curls on top",
+                'dreadlocks' => "Transform this person to have dreadlocks with {$color} color, rope-like strands"
             ]
         ];
 
-        return $prompts[$gender][$hairstyle][$color] ?? 
-               "Transform this person to have {$hairstyle} {$color} hair with modern styling";
+        // Look up specific style prompt
+        $styleKey = strtolower($hairstyle);
+        if (isset($basicPrompts[$gender][$styleKey])) {
+            return $basicPrompts[$gender][$styleKey];
+        }
+
+        // Fallback for unmatched styles
+        return "Transform this person to have {$hairstyle} hair with {$color} color and professional styling";
+    }
+
+    /**
+     * Create professional prompt for complex color transformations
+     */
+    private function createProfessionalPrompt($gender, $hairstyle, $color)
+    {
+        // Parse professional color description
+        $basePrompt = "Transform this person to have {$hairstyle} hair with professional salon coloring: {$color}";
+        
+        // Add gender-specific styling details
+        if ($gender === 'female') {
+            $basePrompt .= ", with smooth blending and natural-looking results, salon-quality finish";
+        } else {
+            $basePrompt .= ", with clean lines and modern styling, professional barbershop quality";
+        }
+        
+        // Add technique-specific details
+        if (stripos($color, 'balayage') !== false) {
+            $basePrompt .= ", hand-painted balayage technique with natural gradients";
+        } elseif (stripos($color, 'highlights') !== false) {
+            $basePrompt .= ", precise highlight placement with professional foil technique";
+        } elseif (stripos($color, 'ombre') !== false) {
+            $basePrompt .= ", smooth ombre transition from dark to light";
+        }
+        
+        return $basePrompt;
     }
 }
