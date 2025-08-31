@@ -230,13 +230,45 @@ class StripePaymentController extends Controller
                 throw new \Exception('Supabase configuration missing');
             }
 
-            // Update user profile with package data
-            // All packages get premium access to styles/colors, but different generation limits
+            // First, get current user profile to add tokens to existing balance
+            $currentProfileResponse = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $supabaseServiceKey,
+                'Content-Type' => 'application/json',
+                'apikey' => $supabaseServiceKey
+            ])->get($supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId);
+
+            $currentProfile = null;
+            if ($currentProfileResponse->successful()) {
+                $profiles = $currentProfileResponse->json();
+                $currentProfile = !empty($profiles) ? $profiles[0] : null;
+            }
+
+            // If we couldn't find by ID, try by email
+            if (!$currentProfile) {
+                $currentProfileResponse = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $supabaseServiceKey,
+                    'Content-Type' => 'application/json',
+                    'apikey' => $supabaseServiceKey
+                ])->get($supabaseUrl . '/rest/v1/user_profiles?email=eq.' . $userEmail);
+
+                if ($currentProfileResponse->successful()) {
+                    $profiles = $currentProfileResponse->json();
+                    $currentProfile = !empty($profiles) ? $profiles[0] : null;
+                }
+            }
+
+            // Calculate new token balances by ADDING to current balance
+            $currentGenerations = $currentProfile['generations_remaining'] ?? 0;
+            $currentTokens = $currentProfile['tokens_remaining'] ?? 0;
+            $newGenerations = $currentGenerations + $generations;
+            $newTokens = $currentTokens + $this->getTokensForPackage($package);
+
+            // Update user profile with package data - ADD tokens to current balance
             $updateData = [
                 'is_premium' => true, // All paid packages get premium access
                 'current_package' => $package,
-                'generations_remaining' => $generations,
-                'tokens_remaining' => $this->getTokensForPackage($package),
+                'generations_remaining' => $newGenerations, // ADD to existing balance
+                'tokens_remaining' => $newTokens, // ADD to existing balance
                 'package_purchased_at' => now()->toISOString()
             ];
 
@@ -271,12 +303,16 @@ class StripePaymentController extends Controller
                 throw new \Exception('Failed to update user profile: ' . $response->body());
             }
 
-            Log::info('User profile updated successfully', [
+            Log::info('User profile updated successfully - tokens added to balance', [
                 'user_id' => $userId,
                 'email' => $userEmail,
                 'package' => $package,
-                'generations' => $generations,
-                'tokens' => $this->getTokensForPackage($package)
+                'generations_purchased' => $generations,
+                'tokens_purchased' => $this->getTokensForPackage($package),
+                'previous_generations' => $currentGenerations,
+                'previous_tokens' => $currentTokens,
+                'new_generations_total' => $newGenerations,
+                'new_tokens_total' => $newTokens
             ]);
 
             // Get package info for payment record
