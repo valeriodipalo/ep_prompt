@@ -59,9 +59,15 @@ class SupabaseAuthController extends Controller
 
             if ($response->successful()) {
                 $userData = $response->json();
+                $userId = $userData['user']['id'] ?? null;
+                
+                // Create user profile with initial free tokens
+                if ($userId) {
+                    $this->createUserProfile($userId, $request->email, $request->name);
+                }
                 
                 Log::info('User registered successfully', [
-                    'user_id' => $userData['user']['id'] ?? null,
+                    'user_id' => $userId,
                     'email' => $request->email
                 ]);
 
@@ -369,5 +375,59 @@ class SupabaseAuthController extends Controller
         }
 
         return false;
+    }
+
+    /**
+     * Create user profile with initial free tokens
+     */
+    private function createUserProfile(string $userId, string $email, ?string $name = null)
+    {
+        try {
+            // Create user profile with initial free allocation
+            $profileData = [
+                'id' => $userId,
+                'email' => $email,
+                'name' => $name,
+                'is_premium' => false,
+                'current_package' => 'free',
+                'tokens_remaining' => 10, // Initial free tokens
+                'generations_remaining' => 2, // Initial free generations
+                'free_transformations_used' => 0,
+                'package_purchased_at' => null,
+                'created_at' => now()->toISOString(),
+                'updated_at' => now()->toISOString()
+            ];
+
+            $response = Http::withHeaders([
+                'apikey' => $this->supabaseServiceKey,
+                'Authorization' => 'Bearer ' . $this->supabaseServiceKey,
+                'Content-Type' => 'application/json',
+                'Prefer' => 'return=minimal'
+            ])->post($this->supabaseUrl . '/rest/v1/user_profiles', $profileData);
+
+            if ($response->successful()) {
+                Log::info('User profile created successfully', [
+                    'user_id' => $userId,
+                    'email' => $email,
+                    'tokens_assigned' => 10,
+                    'generations_assigned' => 2
+                ]);
+                return true;
+            } else {
+                Log::error('Failed to create user profile', [
+                    'user_id' => $userId,
+                    'email' => $email,
+                    'error' => $response->body()
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('User profile creation exception', [
+                'user_id' => $userId,
+                'email' => $email,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
     }
 }
