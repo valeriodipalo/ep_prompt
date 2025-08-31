@@ -2202,16 +2202,23 @@
                                         <div>
                                             <h4 className="text-lg font-semibold text-gray-800 mb-4">Base Color</h4>
                                             <div className="grid grid-cols-6 md:grid-cols-8 gap-4">
-                                                {professionalColorPalette.filter(c => ['medium-brown', 'dark-brown'].includes(c.id)).map((color) => {
+                                                {professionalColorPalette.map((color) => {
                                                     const isSelected = colorChoice.accented?.baseColorId === color.id;
+                                                    const isLocked = !['jet-black', 'medium-brown', 'dark-brown'].includes(color.id) && !userProfile?.is_premium;
                                                     
                                                     return (
                                                         <button
                                                             key={color.id}
-                                                            onClick={() => setColorChoice(prev => ({
-                                                                ...prev,
-                                                                accented: { ...prev.accented, baseColorId: color.id }
-                                                            }))}
+                                                            onClick={() => {
+                                                                if (isLocked) {
+                                                                    setShowPaymentModal(true);
+                                                                    return;
+                                                                }
+                                                                setColorChoice(prev => ({
+                                                                    ...prev,
+                                                                    accented: { ...prev.accented, baseColorId: color.id }
+                                                                }));
+                                                            }}
                                                             className={`relative w-12 h-12 rounded-lg border-2 transition-all duration-200 ${
                                                                 isSelected 
                                                                     ? 'border-purple-500 shadow-lg transform scale-110' 
@@ -2231,6 +2238,13 @@
                                                                     </svg>
                                                                 </div>
                                                             )}
+                                                            
+                                                            {/* Lock overlay for premium base colors */}
+                                                            {isLocked && (
+                                                                <div className="absolute top-1 right-1 bg-white bg-opacity-90 rounded-full p-1 shadow-sm">
+                                                                    <span className="text-gray-500 text-xs">🔒</span>
+                                                                </div>
+                                                            )}
                                                         </button>
                                                     );
                                                 })}
@@ -2241,10 +2255,9 @@
                                         <div>
                                             <h4 className="text-lg font-semibold text-gray-800 mb-4">Accent Color</h4>
                                             <div className="grid grid-cols-6 md:grid-cols-8 gap-4">
-                                                {professionalColorPalette.filter(c => ['golden-blonde', 'honey-blonde', 'platinum', 'ash-blonde'].includes(c.id)).map((color) => {
+                                                {professionalColorPalette.map((color) => {
                                                     const isSelected = colorChoice.accented?.accentColorId === color.id;
-                                                    const isHoneyBalayageColor = color.id === 'golden-blonde';
-                                                    const isLocked = !isHoneyBalayageColor && !userProfile?.is_premium;
+                                                    const isLocked = !['golden-blonde'].includes(color.id) && !userProfile?.is_premium;
                                                     
                                                     return (
                                                         <button
