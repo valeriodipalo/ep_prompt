@@ -89,8 +89,8 @@ class SimpleAuthController extends Controller
                     ]);
                 }
                 
-                // Create user profile with initial free tokens
-                $profile = $this->createOrGetUserProfile($userId, $request->email, $request->name);
+                // Get user profile (created by Supabase trigger) and ensure correct token allocation
+                $profile = $this->ensureUserProfileHasTokens($userId);
                 
                 return response()->json([
                     'success' => true,
@@ -167,8 +167,8 @@ class SimpleAuthController extends Controller
                     ], 500);
                 }
                 
-                // Get or create user profile with transformation count
-                $profile = $this->createOrGetUserProfile($user['id'], $user['email'], $user['user_metadata']['name'] ?? null);
+                // Get user profile and ensure correct token allocation
+                $profile = $this->ensureUserProfileHasTokens($user['id']);
                 
                 return response()->json([
                     'success' => true,
@@ -420,74 +420,85 @@ class SimpleAuthController extends Controller
     }
 
     /**
-     * Create or get user profile with initial tokens
+     * Ensure user profile has correct token allocation (relies on Supabase trigger for creation)
      */
-    private function createOrGetUserProfile(string $userId, string $email, ?string $name = null)
+    private function ensureUserProfileHasTokens(string $userId)
     {
         try {
-            // First, try to get existing profile
-            $existingProfile = $this->getUserProfile($userId);
+            // Wait a moment for Supabase trigger to create profile
+            sleep(1);
             
-            if ($existingProfile) {
-                Log::info('User profile already exists', ['user_id' => $userId]);
-                return $existingProfile;
+            // Get the profile created by Supabase trigger
+            $profile = $this->getUserProfile($userId);
+            
+            if (!$profile) {
+                Log::error('Profile not found after registration', ['user_id' => $userId]);
+                // Return default structure for frontend compatibility
+                return [
+                    'id' => $userId,
+                    'is_premium' => false,
+                    'tokens_remaining' => 10,
+                    'generations_remaining' => 2,
+                    'current_package' => 'free'
+                ];
             }
             
-            // Create new user profile with initial free allocation
-            $profileData = [
-                'id' => $userId,
-                'email' => $email,
-                'name' => $name,
-                'is_premium' => false,
-                'current_package' => 'free',
-                'tokens_remaining' => 10, // Initial free tokens
-                'generations_remaining' => 2, // Initial free generations
-                'free_transformations_used' => 0, // Legacy field for compatibility
-                'package_purchased_at' => null,
-                'created_at' => now()->toISOString(),
-                'updated_at' => now()->toISOString()
-            ];
-
-            $response = Http::withHeaders([
-                'apikey' => $this->supabaseServiceKey,
-                'Authorization' => 'Bearer ' . $this->supabaseServiceKey,
-                'Content-Type' => 'application/json',
-                'Prefer' => 'return=representation'
-            ])->post($this->supabaseUrl . '/rest/v1/user_profiles', $profileData);
-
-            if ($response->successful()) {
-                $createdProfile = $response->json();
-                Log::info('User profile created successfully', [
-                    'user_id' => $userId,
-                    'email' => $email,
-                    'tokens_assigned' => 10,
-                    'generations_assigned' => 2
-                ]);
-                return $createdProfile[0] ?? $profileData;
-            } else {
-                Log::error('Failed to create user profile', [
-                    'user_id' => $userId,
-                    'email' => $email,
-                    'error' => $response->body()
-                ]);
-                // Return default profile structure even if creation failed
-                return $profileData;
+            // Check if profile needs token allocation update
+            $needsUpdate = false;
+            $updateData = [];
+            
+            if (!isset($profile['tokens_remaining']) || $profile['tokens_remaining'] === 0) {
+                $updateData['tokens_remaining'] = 10;
+                $needsUpdate = true;
             }
+            
+            if (!isset($profile['generations_remaining']) || $profile['generations_remaining'] === 0) {
+                $updateData['generations_remaining'] = 2;
+                $needsUpdate = true;
+            }
+            
+            if (!isset($profile['current_package'])) {
+                $updateData['current_package'] = 'free';
+                $needsUpdate = true;
+            }
+            
+            // Update profile if needed
+            if ($needsUpdate) {
+                $response = Http::withHeaders([
+                    'apikey' => $this->supabaseServiceKey,
+                    'Authorization' => 'Bearer ' . $this->supabaseServiceKey,
+                    'Content-Type' => 'application/json'
+                ])->patch($this->supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId, $updateData);
+                
+                if ($response->successful()) {
+                    Log::info('User profile tokens updated', [
+                        'user_id' => $userId,
+                        'updates' => $updateData
+                    ]);
+                    // Merge updates into profile
+                    $profile = array_merge($profile, $updateData);
+                } else {
+                    Log::error('Failed to update user profile tokens', [
+                        'user_id' => $userId,
+                        'error' => $response->body()
+                    ]);
+                }
+            }
+            
+            return $profile;
+            
         } catch (\Exception $e) {
-            Log::error('User profile creation exception', [
+            Log::error('Ensure profile tokens exception', [
                 'user_id' => $userId,
-                'email' => $email,
                 'error' => $e->getMessage()
             ]);
-            // Return default profile structure
+            // Return default structure
             return [
                 'id' => $userId,
-                'email' => $email,
-                'name' => $name,
                 'is_premium' => false,
                 'tokens_remaining' => 10,
                 'generations_remaining' => 2,
-                'free_transformations_used' => 0
+                'current_package' => 'free'
             ];
         }
     }
