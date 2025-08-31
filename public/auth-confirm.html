@@ -101,13 +101,19 @@
                     }));
                 }
                 
-                // Redirect to widget (production-aware)
+                // Redirect to widget (development-aware)
                 const baseUrl = window.location.origin;
-                window.location.href = `${baseUrl}/styleai-widget.html?auth=confirmed&auto_login=true`;
+                const widgetPath = window.location.hostname === 'localhost' && window.location.port === '5174' 
+                    ? '/styleai-widget-dev.html' 
+                    : '/styleai-widget.html';
+                window.location.href = `${baseUrl}${widgetPath}?auth=confirmed&auto_login=true`;
             } else {
-                // No tokens found, just redirect (production-aware)
+                // No tokens found, just redirect (development-aware)
                 const baseUrl = window.location.origin;
-                window.location.href = `${baseUrl}/styleai-widget.html`;
+                const widgetPath = window.location.hostname === 'localhost' && window.location.port === '5174' 
+                    ? '/styleai-widget-dev.html' 
+                    : '/styleai-widget.html';
+                window.location.href = `${baseUrl}${widgetPath}`;
             }
         }
 

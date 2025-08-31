@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Test - StyleAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full mx-4">
+        <div class="text-center">
+            <h1 class="text-2xl font-bold text-gray-800 mb-4">Local Auth Testing</h1>
+            <p class="text-gray-600 mb-6">Use this page to test authentication locally</p>
+            
+            <div class="space-y-4">
+                <button 
+                    onclick="goToWidget()" 
+                    class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all"
+                >
+                    Go to Development Widget
+                </button>
+                
+                <button 
+                    onclick="clearAuth()" 
+                    class="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-all"
+                >
+                    Clear Local Auth
+                </button>
+            </div>
+            
+            <div class="mt-6 p-4 bg-gray-50 rounded-lg text-left">
+                <h3 class="font-semibold mb-2">Current URLs:</h3>
+                <p class="text-sm text-gray-600">Origin: <span id="origin"></span></p>
+                <p class="text-sm text-gray-600">Dev Widget: <span id="dev-widget"></span></p>
+                <p class="text-sm text-gray-600">Auth Confirm: <span id="auth-confirm"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function goToWidget() {
+            window.location.href = '/styleai-widget-dev.html';
+        }
+        
+        function clearAuth() {
+            localStorage.removeItem('supabase_auth');
+            localStorage.removeItem('user');
+            localStorage.removeItem('userProfile');
+            alert('Local authentication cleared!');
+        }
+        
+        // Display current URLs
+        document.getElementById('origin').textContent = window.location.origin;
+        document.getElementById('dev-widget').textContent = window.location.origin + '/styleai-widget-dev.html';
+        document.getElementById('auth-confirm').textContent = window.location.origin + '/auth-confirm.html';
+    </script>
+</body>
+</html>
