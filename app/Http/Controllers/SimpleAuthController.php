@@ -492,12 +492,27 @@ class SimpleAuthController extends Controller
             $needsUpdate = false;
             $updateData = [];
             
-            if (!isset($profile['tokens_remaining']) || $profile['tokens_remaining'] === 0) {
+            // Only set default tokens for NEW users (no package purchased) or NULL values
+            // Don't reset tokens to default if user has purchased packages and used up their tokens
+            $hasPurchasedPackage = !empty($profile['package_purchased_at']) || ($profile['current_package'] ?? 'free') !== 'free';
+            
+            Log::info('Token allocation check', [
+                'user_id' => $userId,
+                'current_tokens' => $profile['tokens_remaining'] ?? 'null',
+                'current_generations' => $profile['generations_remaining'] ?? 'null',
+                'current_package' => $profile['current_package'] ?? 'null',
+                'package_purchased_at' => $profile['package_purchased_at'] ?? 'null',
+                'has_purchased_package' => $hasPurchasedPackage,
+                'will_reset_tokens' => (!isset($profile['tokens_remaining']) || ($profile['tokens_remaining'] === 0 && !$hasPurchasedPackage)),
+                'will_reset_generations' => (!isset($profile['generations_remaining']) || ($profile['generations_remaining'] === 0 && !$hasPurchasedPackage))
+            ]);
+            
+            if (!isset($profile['tokens_remaining']) || ($profile['tokens_remaining'] === 0 && !$hasPurchasedPackage)) {
                 $updateData['tokens_remaining'] = 10;
                 $needsUpdate = true;
             }
             
-            if (!isset($profile['generations_remaining']) || $profile['generations_remaining'] === 0) {
+            if (!isset($profile['generations_remaining']) || ($profile['generations_remaining'] === 0 && !$hasPurchasedPackage)) {
                 $updateData['generations_remaining'] = 2;
                 $needsUpdate = true;
             }
