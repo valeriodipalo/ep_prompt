@@ -317,6 +317,40 @@ Route::prefix('tokens')->group(function () {
         }
     });
 
+    // Debug endpoint to check user ID format
+    Route::get('/debug/{userId}', function($userId) {
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseServiceKey = env('SUPABASE_SERVICE_KEY');
+
+            if (!$supabaseUrl || !$supabaseServiceKey) {
+                return response()->json(['error' => 'Supabase configuration missing'], 500);
+            }
+
+            // Try to find user by ID
+            $userResponse = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $supabaseServiceKey,
+                'Content-Type' => 'application/json'
+            ])->get($supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId);
+
+            return response()->json([
+                'debug_info' => [
+                    'provided_user_id' => $userId,
+                    'supabase_query' => $supabaseUrl . '/rest/v1/user_profiles?id=eq.' . $userId,
+                    'response_status' => $userResponse->status(),
+                    'response_body' => $userResponse->json(),
+                    'found_users' => count($userResponse->json() ?? [])
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Debug failed',
+                'message' => $e->getMessage(),
+                'user_id' => $userId
+            ], 500);
+        }
+    });
+
     // Check token balance
     Route::get('/balance/{userId}', function($userId) {
         try {

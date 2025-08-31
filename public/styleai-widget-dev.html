@@ -610,20 +610,27 @@
             };
 
             const handleGenerate = async () => {
+                console.log('🎯 GENERATE BUTTON CLICKED - Starting handleGenerate function');
+                console.log('🔍 DEBUG: Current state:', {
+                    selectedStyle: selectedStyle,
+                    uploadedImage: uploadedImage,
+                    user: user,
+                    userProfile: userProfile,
+                    isTestMode: isTestMode
+                });
+                
                 // Validation: Check if style is selected
                 if (!selectedStyle) {
+                    console.log('❌ No style selected, showing notification');
                     // Show a more subtle notification instead of alert
-                    const notification = document.createElement('div');
-                    notification.className = 'fixed top-4 right-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50';
-                    notification.innerHTML = '⚠️ Please select a hairstyle first!';
-                    document.body.appendChild(notification);
-                    
-                    // Auto-remove after 3 seconds
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.parentNode.removeChild(notification);
-                        }
-                    }, 3000);
+                    showToast('⚠️ Please select a hairstyle first!', 'error');
+                    return;
+                }
+                
+                // Validation: Check if image is uploaded
+                if (!uploadedImage) {
+                    console.log('❌ No image uploaded, showing notification');
+                    showToast('⚠️ Please upload an image first!', 'error');
                     return;
                 }
                 
@@ -632,11 +639,27 @@
                 
                 // 🎯 CHECK TOKENS BEFORE GENERATION (Skip in test mode)
                 const userId = user?.id || userProfile?.id;
+                console.log('🔍 DEBUG: User data for token check:', {
+                    user: user,
+                    userProfile: userProfile,
+                    userId: userId,
+                    isTestMode: isTestMode
+                });
+                
                 if (!isTestMode && userId) {
                     console.log('🔍 DEBUG: Checking token balance before generation');
                     
                     try {
+                        console.log('🔍 DEBUG: Making token balance request to:', `${API_BASE_URL}/api/tokens/balance/${userId}`);
                         const tokenCheckResponse = await fetch(`${API_BASE_URL}/api/tokens/balance/${userId}`);
+                        console.log('🔍 DEBUG: Token check response status:', tokenCheckResponse.status);
+                        
+                        if (!tokenCheckResponse.ok) {
+                            const errorText = await tokenCheckResponse.text();
+                            console.error('❌ Token check failed with status:', tokenCheckResponse.status, 'Response:', errorText);
+                            throw new Error(`Token check failed: ${tokenCheckResponse.status} - ${errorText}`);
+                        }
+                        
                         const tokenData = await tokenCheckResponse.json();
                         
                         if (!tokenData.success) {
