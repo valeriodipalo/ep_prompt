@@ -815,11 +815,11 @@
                                     
                                     // Update UI with new generation count
                                     if (deductResult.profile) {
-                                        setUserProfile(prev => ({
-                                            ...prev,
+                                    setUserProfile(prev => ({
+                                        ...prev,
                                             ...deductResult.profile
-                                        }));
-                                        
+                                    }));
+                                    
                                         const remainingGenerations = deductResult.profile.generations_remaining || 0;
                                         showToast(`Generation complete! ${remainingGenerations} generations remaining.`, 'success');
                                     }
@@ -1067,7 +1067,7 @@
                     
                                          // Load styles with gender parameter
                      const stylesResponse = await fetch(`${API_BASE_URL}/api/styles/hairstyles?is_premium=${isPremium}&gender=${selectedGender || 'male'}`);
-                     const stylesData = await stylesResponse.json();
+                    const stylesData = await stylesResponse.json();
                     
                     if (stylesData.success) {
                         setHairstyles(stylesData.styles);
@@ -1103,7 +1103,7 @@
             // Load styles when component mounts, user premium status changes, or gender changes
             React.useEffect(() => {
                 if (selectedGender) {
-                    loadStylesAndColors();
+                loadStylesAndColors();
                 }
             }, [userProfile?.is_premium, selectedGender]);
 
@@ -1316,25 +1316,25 @@
                                 </div>
                             </button>
                         )}
-                            </div>
-                            
+                    </div>
+                    
                             {/* Right: Token Counter */}
                             <div>
                         {user && userProfile && !userProfile.is_premium ? (
                             <div className="relative">
                                 <div className="flex items-center space-x-2">
                                     {/* Token Counter */}
-                                    <div className="bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 hover:shadow-xl transition-all duration-200">
-                                        <div className="flex items-center space-x-2">
+                                <div className="bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 hover:shadow-xl transition-all duration-200">
+                                    <div className="flex items-center space-x-2">
                                             <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                                             </svg>
-                                            <div className="text-sm font-semibold text-gray-800">
+                                        <div className="text-sm font-semibold text-gray-800">
                                                 {userProfile?.generations_remaining || 0} tokens
-                                            </div>
                                         </div>
                                     </div>
-                                    
+                                </div>
+                                
                                     {/* + PRO Button */}
                                     <button
                                         onClick={() => setShowPaymentModal(true)}
@@ -1346,9 +1346,9 @@
                                         </svg>
                                         <span className="text-xs font-semibold">PRO</span>
                                     </button>
-                                </div>
-                                
-                            </div>
+                                        </div>
+                                        
+                                            </div>
                         ) : user && userProfile?.is_premium ? (
                             <div className="flex items-center space-x-2">
                                 {/* Premium Token Counter */}
@@ -1360,25 +1360,25 @@
                                         <div className="text-sm font-semibold text-gray-800">
                                             {userProfile?.generations_remaining || 0} tokens
                                         </div>
-                                    </div>
+                                            </div>
                                 </div>
-                                
+                                        
                                 {/* + PRO Button for Top Up */}
-                                <button
-                                    onClick={() => setShowPaymentModal(true)}
+                                        <button
+                                            onClick={() => setShowPaymentModal(true)}
                                     className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-3 rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:scale-105 flex items-center space-x-1"
 
-                                >
+                                        >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                     </svg>
                                     <span className="text-xs font-semibold">PRO</span>
-                                </button>
-                            </div>
+                                        </button>
+                                    </div>
                         ) : null}
+                                </div>
                             </div>
-                        </div>
-                    </div>
+                                    </div>
                     
                     {/* Smart Get Pro Floating Button - Only for Free Users */}
                     {user && userProfile && !userProfile.is_premium && step > 1 && (
@@ -1393,9 +1393,9 @@
                                 </svg>
                                 <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                                     💎
-                                </div>
+                                    </div>
                             </button>
-                        </div>
+                                </div>
                     )}
                     
                     {/* Main Widget Container */}
@@ -2103,8 +2103,8 @@
                                                                 <span className="ml-2 text-yellow-500">💎</span>
                                                             )}
                                                         </div>
-                                                        <div className="text-xs text-gray-600">
-                                                            {preset.description}
+                                                    <div className="text-xs text-gray-600">
+                                                        {preset.description}
                                                         </div>
                                                     </div>
                                                 </button>
@@ -2219,8 +2219,8 @@
                                                                     return;
                                                                 }
                                                                 setColorChoice(prev => ({
-                                                                    ...prev,
-                                                                    accented: { ...prev.accented, baseColorId: color.id }
+                                                                ...prev,
+                                                                accented: { ...prev.accented, baseColorId: color.id }
                                                                 }));
                                                             }}
                                                             className={`relative w-12 h-12 rounded-lg border-2 transition-all duration-200 ${
@@ -2482,22 +2482,7 @@
                                     </div>
                                 )}
 
-                                {/* Premium color upsell */}
-                                {!userProfile?.is_premium && hairColors.some(c => c.is_premium) && (
-                                    <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
-                                        <div className="text-center">
-                                            <p className="text-sm text-purple-800 mb-2">
-                                                🎨 Unlock {hairColors.filter(c => c.is_premium).length} premium colors
-                                            </p>
-                                            <button
-                                                onClick={() => setShowPaymentModal(true)}
-                                                className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full hover:from-purple-600 hover:to-pink-600 transition-colors"
-                                            >
-                                                Get Creative Colors - $9.99
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
+
                             </div>
 
                             {selectedStyle && (
@@ -2541,7 +2526,7 @@
                                 </div>
                                 <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
                                     {showLoadingScreen ? 'Creating Your New Look!' : 'Your Transformation is Ready!'}
-                                </h3>
+                            </h3>
                                 <p className="text-gray-600 text-sm">
                                     {showLoadingScreen ? 'Our AI is working its magic...' : 'Swipe to compare your before and after'}
                                 </p>
@@ -2732,7 +2717,7 @@
                             <div className="space-y-3">
                                 {/* Primary Actions Row */}
                                 <div className="grid grid-cols-2 gap-3">
-                                    <button
+                                <button
                                         onClick={async () => {
                                             try {
                                                 const filename = `styleai-${selectedStyle?.name?.toLowerCase().replace(/\s+/g, '-') || 'transformation'}-${Date.now()}.png`;
@@ -2831,13 +2816,13 @@
                                                     }
                                                 } else {
                                                     // Desktop: Standard download
-                                                    const link = document.createElement('a');
-                                                    link.href = transformedImage.url;
+                                        const link = document.createElement('a');
+                                        link.href = transformedImage.url;
                                                     link.download = filename;
                                                     link.target = '_blank';
                                                     
                                                     document.body.appendChild(link);
-                                                    link.click();
+                                        link.click();
                                                     document.body.removeChild(link);
                                                     showToast('✅ Image downloaded successfully!', 'success');
                                                 }
@@ -2852,8 +2837,8 @@
                                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
-                                        Download
-                                    </button>
+                                    Download
+                                </button>
                                     
                                     <button
                                         onClick={async () => {
@@ -3062,12 +3047,12 @@
                                 
                                 {/* Additional Actions - Expandable */}
                                 <div className="pt-2 border-t border-gray-100">
-                                    <button
-                                        onClick={handleReset}
+                                <button
+                                    onClick={handleReset}
                                         className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm"
-                                    >
+                                >
                                         🔄 Start Over with New Photo
-                                    </button>
+                                </button>
                                 </div>
                             </div>
                         </div>
@@ -3085,7 +3070,14 @@
 
                     {/* Authentication Modal */}
                     {showAuthModal && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div 
+                            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                            onClick={(e) => {
+                                if (e.target === e.currentTarget) {
+                                    setShowAuthModal(false);
+                                }
+                            }}
+                        >
                             <div className="bg-white rounded-xl p-6 w-full max-w-md">
                                 <div className="text-center mb-6">
                                     <h3 className="text-xl font-bold text-gray-800 mb-2">
@@ -3127,7 +3119,14 @@
 
                     {/* Three-Tier Pricing Modal */}
                     {showPaymentModal && pricingPackages && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div 
+                            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                            onClick={(e) => {
+                                if (e.target === e.currentTarget) {
+                                    setShowPaymentModal(false);
+                                }
+                            }}
+                        >
                             <div className="bg-white rounded-2xl p-8 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
                                 <div className="text-center mb-6">
                                     <h3 className="text-2xl font-bold text-gray-800 mb-1">Choose Your StyleAI Package</h3>
