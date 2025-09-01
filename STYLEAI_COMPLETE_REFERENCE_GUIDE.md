@@ -1488,11 +1488,387 @@ rm public/styleai-widget-backup.html
 #### **Files Modified**
 - `public/styleai-widget.html`: Removed developer mode UI elements
 
+## 🎨 **NEW COLOR PALETTE SYSTEM (January 2025)**
+
+### **Professional Salon Color Palette**
+
+#### **Implementation Overview**
+- ✅ **Industry-Standard Colors**: Based on professional salon color references
+- ✅ **Exact Hex Codes**: Matching real hair color specifications
+- ✅ **Enhanced Categorization**: Natural, Blonde, Red, Gray/Silver, Creative
+- ✅ **Professional Naming**: Consistent with salon terminology
+
+#### **Color Categories**
+
+**Natural Colors:**
+```javascript
+{ id: 'black', name: 'Black', hex: '#0B0B0B', family: 'natural', isPremium: false },
+{ id: 'dark-brown', name: 'Dark Brown', hex: '#3B2F2F', family: 'natural', isPremium: false },
+{ id: 'chestnut-brown', name: 'Chestnut Brown', hex: '#4E342E', family: 'natural', isPremium: true },
+{ id: 'medium-brown', name: 'Medium Brown', hex: '#6B4226', family: 'natural', isPremium: false },
+{ id: 'light-brown', name: 'Light Brown', hex: '#8B5A2B', family: 'natural', isPremium: true }
+```
+
+**Blonde Colors:**
+```javascript
+{ id: 'dark-blonde', name: 'Dark Blonde', hex: '#C2A676', family: 'blonde', isPremium: true },
+{ id: 'sandy-blonde', name: 'Sandy Blonde', hex: '#D6C49B', family: 'blonde', isPremium: true },
+{ id: 'golden-blonde', name: 'Golden Blonde', hex: '#FFD36E', family: 'blonde', isPremium: false },
+{ id: 'light-blonde', name: 'Light Blonde', hex: '#F3E2B3', family: 'blonde', isPremium: true },
+{ id: 'platinum-blonde', name: 'Platinum Blonde', hex: '#FAF6F0', family: 'blonde', isPremium: true }
+```
+
+**Creative Colors:**
+```javascript
+{ id: 'blue', name: 'Blue', hex: '#3B82F6', family: 'creative', isPremium: true },
+{ id: 'green', name: 'Green', hex: '#10B981', family: 'creative', isPremium: true },
+{ id: 'purple', name: 'Purple', hex: '#6B21A8', family: 'creative', isPremium: true },
+{ id: 'pink', name: 'Pink', hex: '#EC4899', family: 'creative', isPremium: true },
+{ id: 'rainbow', name: 'Rainbow', hex: '#FF6B6B', family: 'creative', isPremium: true }
+```
+
+#### **Freemium Color Logic**
+**Base Colors (Free):**
+- ✅ Black, Medium Brown, Dark Brown
+- 🔒 All others (premium)
+
+**Accent Colors (Free):**
+- ✅ Golden Blonde (only free accent)
+- 🔒 All others (premium)
+
+#### **User Experience Features**
+- **Hover Tooltips**: Show color name (first word only)
+- **Lock Icons**: Consistent across all premium colors
+- **Click Behavior**: Locked colors open payment modal
+- **Professional Appearance**: Industry-standard color accuracy
+
+---
+
+## 🔒 **UNIFIED LOCK SYSTEM (January 2025)**
+
+### **Consistent Premium Content Display**
+
+#### **Problem Solved**
+- Previously: Premium content was hidden from free users
+- Now: All content visible with professional lock indicators
+
+#### **Implementation**
+**Hairstyles:**
+```javascript
+// Show ALL hairstyles with locks for premium ones
+{!style.is_free && !userProfile?.is_premium && (
+    <div className="absolute inset-0 bg-black bg-opacity-40 rounded-lg flex items-center justify-center">
+        <span className="text-white text-lg">🔒</span>
+    </div>
+)}
+```
+
+**Colors:**
+```javascript
+// Consistent lock styling across base and accent colors
+{isLocked && (
+    <div className="absolute inset-0 bg-black bg-opacity-40 rounded-md flex items-center justify-center">
+        <span className="text-white text-lg">🔒</span>
+    </div>
+)}
+```
+
+#### **Backend Changes**
+**StyleController.php:**
+```php
+// Return ALL styles/colors regardless of premium status
+// Frontend handles premium access control with locks
+$filteredStyles = $styles; // No premium filtering
+$filteredColors = $colors; // No premium filtering
+```
+
+#### **User Experience**
+- **Free Users**: See full catalog potential with clear upgrade indicators
+- **Premium Users**: No locks visible, complete access
+- **Conversion**: Better upgrade rates by showing full value
+
+---
+
+## 💳 **PAYMENT SYSTEM FIXES (January 2025)**
+
+### **Critical Token Accumulation Bug**
+
+#### **Root Cause Identified**
+```php
+// BUG: SimpleAuthController was resetting tokens for users with 0 balance
+if ($profile['generations_remaining'] === 0) {
+    $updateData['generations_remaining'] = 2; // WRONG: Reset to default
+}
+```
+
+#### **The Bug Sequence**
+1. User buys package (webhook adds tokens: 2 + 3 = 5) ✅
+2. User uses all tokens (balance becomes 0) ✅
+3. User buys another package (webhook adds: 0 + 3 = 3) ✅
+4. Frontend calls `/api/auth/profile` 🚨
+5. `ensureUserProfileHasTokens()` sees 0 and resets to 2 (BUG!)
+
+#### **Solution Implemented**
+```php
+// Only reset tokens for NEW users (no package purchased)
+$hasPurchasedPackage = !empty($profile['package_purchased_at']) || 
+                      ($profile['current_package'] ?? 'free') !== 'free';
+
+if ($profile['generations_remaining'] === 0 && !$hasPurchasedPackage) {
+    $updateData['generations_remaining'] = 2; // Only for new users
+}
+```
+
+#### **Stripe Webhook Enhancement**
+```php
+// Fetch current balance and ADD tokens (not replace)
+$currentGenerations = $currentProfile['generations_remaining'] ?? 0;
+$newGenerations = $currentGenerations + $generations; // ADD to balance
+
+$updateData = [
+    'generations_remaining' => $newGenerations, // Accumulate tokens
+    'tokens_remaining' => $newTokens,           // Accumulate tokens
+];
+```
+
+---
+
+## 📱 **MOBILE OPTIMIZATION (January 2025)**
+
+### **iPhone-Native Download & Share**
+
+#### **Download Optimization**
+**Canvas-Based Processing:**
+```javascript
+// Create canvas and convert to blob for iOS-native downloads
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = img.naturalWidth;
+canvas.height = img.naturalHeight;
+ctx.drawImage(img, 0, 0);
+
+const blob = await new Promise(resolve => {
+    canvas.toBlob(resolve, 'image/png', 1.0);
+});
+```
+
+**iOS-Specific Features:**
+- ✅ **Direct Download**: To Files app or Photos
+- ✅ **Cross-Origin Handling**: `img.crossOrigin = 'anonymous'`
+- ✅ **Memory Management**: Automatic cleanup
+- ✅ **Quality Preservation**: Full resolution maintained
+
+#### **Share Optimization**
+**Native iOS Share Sheet:**
+```javascript
+// Share actual image file (not URL)
+const file = new File([blob], 'styleai-transformation.png', { type: 'image/png' });
+
+if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({
+        title: 'My StyleAI Hair Transformation',
+        text: 'Check out my new hairstyle! 💇‍♀️✨',
+        files: [file] // Actual image file
+    });
+}
+```
+
+**Fallback Chain:**
+1. Canvas-based file sharing (iOS optimized)
+2. Fetch-based blob sharing
+3. URL sharing
+4. Manual sharing via new tab
+5. Clipboard/Alert fallbacks
+
+#### **Platform-Specific Experience**
+**iPhone:**
+- Download → Direct to Files/Photos
+- Share → Native iOS share sheet with image
+
+**Android:**
+- Download → Downloads folder
+- Share → Android native share menu
+
+**Desktop:**
+- Download → Standard file download
+- Share → Clipboard copy
+
+---
+
+## 🌐 **WEBFLOW INTEGRATION (January 2025)**
+
+### **Dynamic Height Communication**
+
+#### **Implementation**
+```javascript
+// Webflow iframe height communication
+function postHeight() {
+    const height = document.body.scrollHeight;
+    if (window.parent !== window) {
+        parent.postMessage({ height }, "*");
+    }
+}
+
+// Multiple trigger points for responsiveness
+window.addEventListener("load", postHeight);
+window.addEventListener("resize", postHeight);
+setInterval(postHeight, 1000);
+
+// Advanced DOM monitoring
+const observer = new MutationObserver(postHeight);
+observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['style', 'class']
+});
+```
+
+#### **Webflow Integration Code**
+```html
+<iframe 
+    id="styleai-iframe"
+    src="https://laraver-final-ai-headshot.vercel.app/styleai-widget.html"
+    width="100%"
+    height="600"
+    frameborder="0"
+    scrolling="no">
+</iframe>
+
+<script>
+window.addEventListener('message', function(event) {
+    if (event.origin === 'https://laraver-final-ai-headshot.vercel.app') {
+        if (event.data && event.data.height) {
+            const iframe = document.getElementById('styleai-iframe');
+            iframe.style.height = event.data.height + 'px';
+        }
+    }
+});
+</script>
+```
+
+#### **Features**
+- ✅ **Dynamic Height**: Automatic iframe resizing
+- ✅ **Cross-Origin Communication**: Secure postMessage API
+- ✅ **Responsive**: Adjusts on all screen sizes
+- ✅ **Real-Time**: Updates during user interactions
+
+---
+
+## 🎯 **ENHANCED PROMPT SYSTEM (January 2025)**
+
+### **Gender-Specific Hairstyle Categories**
+
+#### **Female Categories**
+```php
+'female' => [
+    'short-styles' => ['Pixie Cut', 'Classic Bob', 'Long Bob'],
+    'medium-styles' => ['Layered Cut', 'Shag Cut', 'Curtain Bangs', 'Shoulder Waves'],
+    'long-styles' => ['Straight Long Hair', 'Layered Long Hair', 'Beach Waves'],
+    'curly-textured' => ['Afro', 'Natural Curls', 'Twists']
+]
+```
+
+#### **Male Categories**
+```php
+'male' => [
+    'short-classics' => ['Buzz Cut', 'Crew Cut', 'French Crop'],
+    'medium-styles' => ['Side Part', 'Pompadour', 'Textured Crop', 'Bro Flow'],
+    'long-styles' => ['Man Bun', 'Shoulder-Length Flow'],
+    'fades-undercuts' => ['Low Fade', 'Mid Fade', 'High Fade', 'Undercut'],
+    'curly-textured' => ['Afro', 'Curly Top Fade', 'Dreadlocks']
+]
+```
+
+#### **Enhanced Prompt Generation**
+**Basic Prompts:**
+```php
+public function createBasicPrompt($style, $color, $gender) {
+    $genderSpecific = $gender === 'female' 
+        ? "feminine hairstyle with soft, elegant styling"
+        : "masculine hairstyle with clean, sharp lines";
+    
+    return "Professional salon {$style} hairstyle, {$color} hair color, {$genderSpecific}";
+}
+```
+
+**Professional Prompts:**
+```php
+public function createProfessionalPrompt($style, $colorChoice, $gender) {
+    // Complex color techniques: balayage, highlights, ombre
+    // Gender-specific styling details
+    // Professional salon terminology
+}
+```
+
+---
+
+## 📊 **DEPLOYMENT & VERSION CONTROL**
+
+### **Git Workflow Strategy**
+
+#### **Branch Structure**
+- **`development`**: Active development, all new features
+- **`10.x`**: Production branch, Vercel deployment source
+- **Auto-sync**: Changes flow development → 10.x → production
+
+#### **Commit Standards**
+```bash
+🎨 FEATURE: New functionality
+🔧 FIX: Bug fixes
+🚨 CRITICAL: Critical production issues
+📱 MOBILE: Mobile-specific improvements
+🍎 ULTIMATE: iOS-native optimizations
+🌐 INTEGRATION: Third-party integrations
+📚 DOCS: Documentation updates
+```
+
+#### **Deployment Process**
+```bash
+# Development → Production
+git checkout development
+git add .
+git commit -m "🎨 FEATURE: Description"
+git checkout 10.x
+git merge development
+git push origin 10.x  # Triggers Vercel deployment
+```
+
+---
+
+## 🔍 **DEBUGGING & MONITORING**
+
+### **Enhanced Logging System**
+
+#### **Payment Processing**
+```php
+Log::info('Token allocation check', [
+    'user_id' => $userId,
+    'current_generations' => $profile['generations_remaining'] ?? 'null',
+    'has_purchased_package' => $hasPurchasedPackage,
+    'will_reset_tokens' => $shouldReset
+]);
+```
+
+#### **Mobile Detection**
+```javascript
+console.log('📐 Webflow iframe height communication initialized');
+console.log('📱 Mobile optimization active:', {
+    isIOS: /iPhone|iPad|iPod/i.test(navigator.userAgent),
+    isAndroid: /Android/i.test(navigator.userAgent)
+});
+```
+
+### **Production Health Checks**
+- **Backend**: `https://web-production-5e40.up.railway.app/api/health`
+- **Webhook**: `https://web-production-5e40.up.railway.app/api/payments/webhook-test`
+- **Supabase**: Connection status in Railway logs
+
 ---
 
 **📚 This guide serves as your complete reference for maintaining, debugging, and extending StyleAI Professional. Keep it updated as you add new features!**
 
 ---
 
-*Last Updated: January 15, 2025*  
-*Version: Production 1.0 - Post Revert to 094eb8c*
+*Last Updated: January 16, 2025*  
+*Version: Production 2.0 - Complete Feature Set*
