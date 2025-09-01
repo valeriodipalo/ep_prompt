@@ -2736,48 +2736,98 @@
                                         onClick={async () => {
                                             try {
                                                 const filename = `styleai-${selectedStyle?.name?.toLowerCase().replace(/\s+/g, '-') || 'transformation'}-${Date.now()}.png`;
-                                                
-                                                // Check if we're on mobile
-                                                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                                                 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                                                const isAndroid = /Android/i.test(navigator.userAgent);
+                                                const isMobile = isIOS || isAndroid;
                                                 
-                                                if (isMobile) {
+                                                if (isIOS) {
                                                     try {
-                                                        // For mobile: Try to create a downloadable blob first
-                                                        const response = await fetch(transformedImage.url);
-                                                        const blob = await response.blob();
+                                                        // iOS-specific: Create canvas and convert to blob for direct download
+                                                        const img = new Image();
+                                                        img.crossOrigin = 'anonymous';
                                                         
-                                                        // Create object URL
+                                                        await new Promise((resolve, reject) => {
+                                                            img.onload = resolve;
+                                                            img.onerror = reject;
+                                                            img.src = transformedImage.url;
+                                                        });
+                                                        
+                                                        // Create canvas and draw image
+                                                        const canvas = document.createElement('canvas');
+                                                        const ctx = canvas.getContext('2d');
+                                                        canvas.width = img.naturalWidth;
+                                                        canvas.height = img.naturalHeight;
+                                                        ctx.drawImage(img, 0, 0);
+                                                        
+                                                        // Convert to blob
+                                                        const blob = await new Promise(resolve => {
+                                                            canvas.toBlob(resolve, 'image/png', 1.0);
+                                                        });
+                                                        
+                                                        // Create object URL and trigger download
                                                         const objectUrl = URL.createObjectURL(blob);
-                                                        
-                                                        // Try direct download approach for mobile
                                                         const link = document.createElement('a');
                                                         link.href = objectUrl;
                                                         link.download = filename;
-                                                        link.style.display = 'none';
+                                                        
+                                                        // iOS-specific: Force download with user interaction
+                                                        document.body.appendChild(link);
+                                                        link.click();
+                                                        document.body.removeChild(link);
+                                                        
+                                                        // Clean up
+                                                        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+                                                        
+                                                        showToast('📱 Download started! Check your Files app or Photos', 'success');
+                                                        
+                                                    } catch (canvasError) {
+                                                        console.log('Canvas download failed, trying blob method:', canvasError);
+                                                        
+                                                        // Fallback: Fetch and create blob
+                                                        try {
+                                                            const response = await fetch(transformedImage.url);
+                                                            const blob = await response.blob();
+                                                            
+                                                            // Create download link with blob
+                                                            const objectUrl = URL.createObjectURL(blob);
+                                                            const link = document.createElement('a');
+                                                            link.href = objectUrl;
+                                                            link.download = filename;
+                                                            
+                                                            document.body.appendChild(link);
+                                                            link.click();
+                                                            document.body.removeChild(link);
+                                                            
+                                                            setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+                                                            showToast('📱 Download started! Check your Downloads or Files app', 'success');
+                                                            
+                                                        } catch (blobError) {
+                                                            // Final iOS fallback: Open in new tab
+                                                            window.open(transformedImage.url, '_blank');
+                                                            showToast('📱 Tap and hold the image, then "Save to Photos"', 'info');
+                                                        }
+                                                    }
+                                                } else if (isAndroid) {
+                                                    // Android-optimized download
+                                                    try {
+                                                        const response = await fetch(transformedImage.url);
+                                                        const blob = await response.blob();
+                                                        const objectUrl = URL.createObjectURL(blob);
+                                                        
+                                                        const link = document.createElement('a');
+                                                        link.href = objectUrl;
+                                                        link.download = filename;
                                                         
                                                         document.body.appendChild(link);
                                                         link.click();
                                                         document.body.removeChild(link);
                                                         
-                                                        // Clean up object URL
                                                         setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+                                                        showToast('✅ Download started! Check your Downloads folder', 'success');
                                                         
-                                                        if (isIOS) {
-                                                            showToast('📱 Tap and hold the image in the new tab, then "Save to Photos"', 'info');
-                                                        } else {
-                                                            showToast('✅ Download started! Check your Downloads folder', 'success');
-                                                        }
-                                                        
-                                                    } catch (blobError) {
-                                                        console.log('Blob download failed, trying direct link:', blobError);
-                                                        // Fallback: open in new tab with better instructions
+                                                    } catch (androidError) {
                                                         window.open(transformedImage.url, '_blank');
-                                                        if (isIOS) {
-                                                            showToast('📱 Tap and hold the image, then select "Save to Photos"', 'info');
-                                                        } else {
-                                                            showToast('📱 Long press the image and select "Download" or "Save"', 'info');
-                                                        }
+                                                        showToast('📱 Long press the image to download', 'info');
                                                     }
                                                 } else {
                                                     // Desktop: Standard download
@@ -2793,9 +2843,8 @@
                                                 }
                                             } catch (error) {
                                                 console.error('Download failed:', error);
-                                                // Ultimate fallback: open in new tab
                                                 window.open(transformedImage.url, '_blank');
-                                                showToast('🖼️ Image opened in new tab - right-click to save', 'info');
+                                                showToast('🖼️ Image opened in new tab - save from there', 'info');
                                             }
                                         }}
                                         className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-4 rounded-xl flex items-center justify-center hover:from-green-600 hover:to-emerald-700 transition-all font-semibold shadow-lg"
@@ -2809,79 +2858,154 @@
                                     <button
                                         onClick={async () => {
                                             try {
-                                                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                                                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                                                const isAndroid = /Android/i.test(navigator.userAgent);
+                                                const isMobile = isIOS || isAndroid;
                                                 
-                                                // Check if Web Share API is available (mainly mobile)
-                                                if (navigator.share && navigator.canShare) {
-                                                    // For mobile: Prioritize image sharing first
+                                                // iOS-optimized sharing with direct image file
+                                                if (isIOS && navigator.share) {
                                                     try {
-                                                        const response = await fetch(transformedImage.url);
-                                                        const blob = await response.blob();
+                                                        // Method 1: Canvas-based image creation for iOS
+                                                        const img = new Image();
+                                                        img.crossOrigin = 'anonymous';
+                                                        
+                                                        await new Promise((resolve, reject) => {
+                                                            img.onload = resolve;
+                                                            img.onerror = reject;
+                                                            img.src = transformedImage.url;
+                                                        });
+                                                        
+                                                        // Create canvas and convert to blob
+                                                        const canvas = document.createElement('canvas');
+                                                        const ctx = canvas.getContext('2d');
+                                                        canvas.width = img.naturalWidth;
+                                                        canvas.height = img.naturalHeight;
+                                                        ctx.drawImage(img, 0, 0);
+                                                        
+                                                        const blob = await new Promise(resolve => {
+                                                            canvas.toBlob(resolve, 'image/png', 1.0);
+                                                        });
+                                                        
                                                         const file = new File([blob], `styleai-transformation-${Date.now()}.png`, { type: 'image/png' });
                                                         
-                                                        // Check if we can share files
-                                                        if (navigator.canShare({ files: [file] })) {
+                                                        // Try file sharing first (iOS native share)
+                                                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
                                                             await navigator.share({
                                                                 title: 'My StyleAI Hair Transformation',
                                                                 text: `Check out my new ${selectedStyle?.name || 'hairstyle'} created with StyleAI! 💇‍♀️✨`,
                                                                 files: [file]
                                                             });
-                                                            showToast('✅ Image shared successfully!', 'success');
+                                                            showToast('📱 Image shared successfully!', 'success');
                                                             return;
                                                         }
-                                                    } catch (imageShareError) {
-                                                        console.log('Image share failed, trying URL share:', imageShareError);
+                                                        
+                                                    } catch (canvasShareError) {
+                                                        console.log('Canvas share failed, trying fetch method:', canvasShareError);
                                                     }
                                                     
-                                                    // Fallback to URL sharing
+                                                    // Method 2: Fetch-based blob sharing
+                                                    try {
+                                                        const response = await fetch(transformedImage.url);
+                                                        const blob = await response.blob();
+                                                        const file = new File([blob], `styleai-transformation-${Date.now()}.png`, { type: 'image/png' });
+                                                        
+                                                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                                            await navigator.share({
+                                                                title: 'My StyleAI Hair Transformation',
+                                                                text: `Check out my new ${selectedStyle?.name || 'hairstyle'} created with StyleAI! 💇‍♀️✨`,
+                                                                files: [file]
+                                                            });
+                                                            showToast('📱 Image shared successfully!', 'success');
+                                                            return;
+                                                        }
+                                                        
+                                                    } catch (fetchShareError) {
+                                                        console.log('Fetch share failed, trying URL share:', fetchShareError);
+                                                    }
+                                                    
+                                                    // Method 3: URL sharing fallback for iOS
                                                     try {
                                                         await navigator.share({
                                                             title: 'My StyleAI Hair Transformation',
                                                             text: `Check out my new ${selectedStyle?.name || 'hairstyle'} created with StyleAI! 💇‍♀️✨`,
                                                             url: transformedImage.url
                                                         });
-                                                        showToast('✅ Shared successfully!', 'success');
+                                                        showToast('📱 Shared successfully!', 'success');
                                                         return;
                                                     } catch (urlShareError) {
-                                                        console.log('URL share failed:', urlShareError);
-                                                    }
-                                                } else if (navigator.share) {
-                                                    // Basic Web Share API without canShare
-                                                    try {
-                                                        await navigator.share({
-                                                            title: 'My StyleAI Hair Transformation',
-                                                            text: `Check out my new ${selectedStyle?.name || 'hairstyle'} created with StyleAI! 💇‍♀️✨`,
-                                                            url: transformedImage.url
-                                                        });
-                                                        showToast('✅ Shared successfully!', 'success');
-                                                        return;
-                                                    } catch (basicShareError) {
-                                                        console.log('Basic share failed:', basicShareError);
+                                                        console.log('iOS URL share failed:', urlShareError);
                                                     }
                                                 }
                                                 
-                                                // Fallback for browsers without Web Share API or share failed
+                                                // Android-optimized sharing
+                                                else if (isAndroid && navigator.share) {
+                                                    try {
+                                                        const response = await fetch(transformedImage.url);
+                                                        const blob = await response.blob();
+                                                        const file = new File([blob], `styleai-transformation-${Date.now()}.png`, { type: 'image/png' });
+                                                        
+                                                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                                            await navigator.share({
+                                                                title: 'My StyleAI Hair Transformation',
+                                                                text: `Check out my new ${selectedStyle?.name || 'hairstyle'} created with StyleAI! 💇‍♀️✨`,
+                                                                files: [file]
+                                                            });
+                                                            showToast('📱 Image shared successfully!', 'success');
+                                                            return;
+                                                        } else {
+                                                            // Android URL share fallback
+                                                            await navigator.share({
+                                                                title: 'My StyleAI Hair Transformation',
+                                                                text: `Check out my new ${selectedStyle?.name || 'hairstyle'} created with StyleAI! 💇‍♀️✨`,
+                                                                url: transformedImage.url
+                                                            });
+                                                            showToast('📱 Shared successfully!', 'success');
+                                                            return;
+                                                        }
+                                                    } catch (androidShareError) {
+                                                        console.log('Android share failed:', androidShareError);
+                                                    }
+                                                }
+                                                
+                                                // General Web Share API fallback
+                                                else if (navigator.share) {
+                                                    try {
+                                                        await navigator.share({
+                                                            title: 'My StyleAI Hair Transformation',
+                                                            text: `Check out my new ${selectedStyle?.name || 'hairstyle'} created with StyleAI! 💇‍♀️✨`,
+                                                            url: transformedImage.url
+                                                        });
+                                                        showToast('✅ Shared successfully!', 'success');
+                                                        return;
+                                                    } catch (generalShareError) {
+                                                        console.log('General share failed:', generalShareError);
+                                                    }
+                                                }
+                                                
+                                                // Final fallbacks
                                                 if (isMobile) {
-                                                    // Mobile fallback: Open image in new tab for sharing
+                                                    // Mobile: Open image for manual sharing
                                                     window.open(transformedImage.url, '_blank');
-                                                    showToast('📱 Image opened in new tab - use your browser\'s share button', 'info');
+                                                    if (isIOS) {
+                                                        showToast('📱 Image opened - tap the share button in Safari', 'info');
+                                                    } else {
+                                                        showToast('📱 Image opened - use your browser\'s share button', 'info');
+                                                    }
                                                 } else {
-                                                    // Desktop fallback: Copy link to clipboard
+                                                    // Desktop: Copy to clipboard
                                                     const shareText = `Check out my new ${selectedStyle?.name || 'hairstyle'} created with StyleAI! 💇‍♀️✨ ${transformedImage.url}`;
                                                     
                                                     if (navigator.clipboard) {
                                                         await navigator.clipboard.writeText(shareText);
-                                                        showToast('📋 Share link copied to clipboard! Paste it anywhere to share.', 'success');
+                                                        showToast('📋 Share link copied to clipboard!', 'success');
                                                     } else {
-                                                        // Ultimate fallback - show modal with text to copy
                                                         alert(`Copy this text to share:\n\n${shareText}`);
                                                     }
                                                 }
                                             } catch (error) {
                                                 console.error('All share methods failed:', error);
-                                                // Final fallback - open the image
                                                 window.open(transformedImage.url, '_blank');
-                                                showToast('🖼️ Image opened in new tab - you can share from there!', 'info');
+                                                showToast('🖼️ Image opened - you can share from there!', 'info');
                                             }
                                         }}
                                         className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 px-4 rounded-xl flex items-center justify-center hover:from-blue-600 hover:to-indigo-700 transition-all font-semibold shadow-lg"
