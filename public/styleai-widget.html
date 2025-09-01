@@ -3307,6 +3307,34 @@
         // Render the widget
         const root = ReactDOM.createRoot(document.getElementById('styleai-widget'));
         root.render(<StyleAIWidget />);
+
+        // ===== WEBFLOW IFRAME HEIGHT COMMUNICATION =====
+        // This script enables dynamic height adjustment when embedded in Webflow
+        function postHeight() {
+            const height = document.body.scrollHeight;
+            // Send height to parent Webflow page
+            if (window.parent !== window) {
+                parent.postMessage({ height }, "*");
+            }
+        }
+
+        // Initialize height communication
+        window.addEventListener("load", postHeight);
+        window.addEventListener("resize", postHeight);
+        
+        // Monitor for dynamic content changes (modals, image uploads, results)
+        setInterval(postHeight, 1000);
+        
+        // Also trigger on common React state changes that affect height
+        const observer = new MutationObserver(postHeight);
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['style', 'class']
+        });
+
+        console.log('📐 Webflow iframe height communication initialized');
     </script>
 </body>
 </html>
