@@ -1,24 +1,11 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
-  "rewrites": [
+  "buildCommand": "echo 'No build needed'",
+  "outputDirectory": "public",
+  "routes": [
     {
-      "source": "/styleai-widget.html",
-      "destination": "/public/styleai-widget.html"
-    },
-    {
-      "source": "/simple-widget.html",
-      "destination": "/public/simple-widget.html"
-    },
-    {
-      "source": "/color-style-demo.html",
-      "destination": "/public/color-style-demo.html"
-    },
-    {
-      "source": "/auth-confirm.html",
-      "destination": "/public/auth-confirm.html"
+      "src": "/",
+      "dest": "/simple-widget.html"
     }
   ]
 }
