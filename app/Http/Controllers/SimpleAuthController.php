@@ -166,8 +166,9 @@ class SimpleAuthController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Login successful',
+                    'access_token' => $authData['access_token'] ?? null,
+                    'refresh_token' => $authData['refresh_token'] ?? null,
                     'user' => $user,
-                    'session' => $session,
                     'profile' => $profile
                 ]);
             } else {
