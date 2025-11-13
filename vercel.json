@@ -9,6 +9,10 @@
       "destination": "/public/styleai-widget.html"
     },
     {
+      "source": "/simple-widget.html",
+      "destination": "/public/simple-widget.html"
+    },
+    {
       "source": "/color-style-demo.html",
       "destination": "/public/color-style-demo.html"
     },

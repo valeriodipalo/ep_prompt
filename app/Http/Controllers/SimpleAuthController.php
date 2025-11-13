@@ -67,9 +67,9 @@ class SimpleAuthController extends Controller
                 $userData = $response->json();
                 Log::info('Supabase registration success response', ['data' => $userData]);
                 
-                // Supabase returns user data directly (not nested under 'user' key)
-                $user = $userData; // The entire response IS the user data
-                $userId = $user['id'] ?? $user['user_id'] ?? null;
+                // Supabase returns user data nested under 'user' key
+                $user = $userData['user'] ?? $userData;
+                $userId = $user['id'] ?? null;
                 
                 if (!$userId) {
                     Log::error('No user ID in registration response', ['response' => $userData]);
@@ -79,22 +79,15 @@ class SimpleAuthController extends Controller
                     ], 500);
                 }
                 
-                // Check if email confirmation is required
-                if (isset($user['confirmation_sent_at']) && !($user['email_verified'] ?? false)) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Registration successful! Please check your email to verify your account before logging in.',
-                        'requires_confirmation' => true,
-                        'user' => $user
-                    ]);
-                }
-                
                 // Get user profile (created by Supabase trigger) and ensure correct token allocation
                 $profile = $this->ensureUserProfileHasTokens($userId);
                 
+                // Return with access tokens for auto-login
                 return response()->json([
                     'success' => true,
-                    'message' => 'Registration successful! You have 2 free generations (10 tokens).',
+                    'message' => 'Registration successful! You have 2 free generations.',
+                    'access_token' => $userData['access_token'] ?? null,
+                    'refresh_token' => $userData['refresh_token'] ?? null,
                     'user' => $user,
                     'profile' => $profile
                 ]);
@@ -259,6 +252,7 @@ class SimpleAuthController extends Controller
     {
         try {
             $userId = $request->input('user_id');
+            $generationsToDeduct = $request->input('generations_to_deduct', 1); // Default to 1 if not specified
             
             if (!$userId) {
                 return response()->json([
@@ -267,20 +261,21 @@ class SimpleAuthController extends Controller
                 ], 400);
             }
 
-            $consumed = $this->consumeUserTransformation($userId);
-            $profile = $this->getUserProfile($userId);
+            $result = $this->consumeUserTransformation($userId, $generationsToDeduct);
 
-            if ($consumed) {
+            if ($result && $result['success']) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Transformation consumed',
-                    'profile' => $profile,
-                    'remaining_free' => max(0, 10 - ($profile['free_transformations_used'] ?? 0))
+                    'generations_remaining' => $result['generations_remaining'],
+                    'generations_consumed' => $result['generations_consumed'],
+                    'profile' => $result['profile']
                 ]);
             } else {
+                $profile = $this->getUserProfile($userId);
                 return response()->json([
                     'success' => false,
-                    'message' => 'No transformations remaining. Upgrade to premium for unlimited access!',
+                    'message' => 'Insufficient generations remaining. Please upgrade!',
                     'profile' => $profile
                 ], 402); // Payment Required
             }
@@ -395,9 +390,9 @@ class SimpleAuthController extends Controller
     }
 
     /**
-     * Helper: Consume user transformation (subtract 1 from generations_remaining)
+     * Helper: Consume user transformation (subtract specified amount from generations_remaining)
      */
-    private function consumeUserTransformation(string $userId)
+    private function consumeUserTransformation(string $userId, int $generationsToDeduct = 1)
     {
         try {
             // Get current profile
@@ -410,17 +405,18 @@ class SimpleAuthController extends Controller
             
             $currentGenerations = $profile['generations_remaining'] ?? 0;
             
-            // Check if user has generations left
-            if ($currentGenerations <= 0) {
-                Log::info('User has no generations remaining', [
+            // Check if user has enough generations
+            if ($currentGenerations < $generationsToDeduct) {
+                Log::info('User has insufficient generations', [
                     'user_id' => $userId,
-                    'current_generations' => $currentGenerations
+                    'current_generations' => $currentGenerations,
+                    'requested_deduction' => $generationsToDeduct
                 ]);
                 return false;
             }
             
-            // Subtract 1 generation
-            $newGenerations = $currentGenerations - 1;
+            // Subtract the specified amount
+            $newGenerations = $currentGenerations - $generationsToDeduct;
             
             // Update user profile in Supabase
             $response = Http::withHeaders([
@@ -433,9 +429,10 @@ class SimpleAuthController extends Controller
             ]);
 
             if ($response->successful()) {
-                Log::info('Generation consumed successfully', [
+                Log::info('Generations consumed successfully', [
                     'user_id' => $userId,
                     'generations_before' => $currentGenerations,
+                    'generations_deducted' => $generationsToDeduct,
                     'generations_after' => $newGenerations
                 ]);
                 
@@ -447,7 +444,7 @@ class SimpleAuthController extends Controller
                 return [
                     'success' => true,
                     'profile' => $updatedProfile,
-                    'generations_consumed' => 1,
+                    'generations_consumed' => $generationsToDeduct,
                     'generations_remaining' => $newGenerations
                 ];
             } else {

@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Generator - Simple Edition</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .simple-widget {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        /* Upload area styling */
+        .upload-area {
+            border: 3px dashed #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #8b5cf6;
+            background-color: #f9fafb;
+        }
+        
+        .upload-area.drag-over {
+            border-color: #8b5cf6;
+            background-color: #f3f4f6;
+        }
+        
+        /* Loading animation */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Confetti Animation */
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            animation: confetti-fall 3s ease-in-out forwards;
+        }
+        
+        /* Slider styling */
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.5);
+            border: 3px solid white;
+        }
+        
+        .slider::-moz-range-thumb {
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-gray-50 to-purple-50 min-h-screen">
+    <div id="simple-widget"></div>
+
+    <script type="text/babel">
+        // Icon components
+        const Upload = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17,8 12,3 7,8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+        );
+
+        const Sparkles = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+            </svg>
+        );
+
+        const Download = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7,10 12,15 17,10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+        );
+
+        const Share = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="18" cy="5" r="3"/>
+                <circle cx="6" cy="12" r="3"/>
+                <circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+        );
+
+        const X = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18"/>
+                <path d="M6 6L18 18"/>
+            </svg>
+        );
+
+        const Loader = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12a9 9 0 11-6.219-8.56"/>
+            </svg>
+        );
+
+        const User = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+            </svg>
+        );
+
+        // Main Simple Widget Component
+        const SimpleWidget = () => {
+            // Core state
+            const [uploadedImage, setUploadedImage] = React.useState(null);
+            const [isGenerating, setIsGenerating] = React.useState(false);
+            const [generatedImage, setGeneratedImage] = React.useState(null);
+            const [isDragging, setIsDragging] = React.useState(false);
+            const [currentLoadingMessage, setCurrentLoadingMessage] = React.useState(0);
+            const [sliderPosition, setSliderPosition] = React.useState(50);
+            
+            // Auth state
+            const [user, setUser] = React.useState(null);
+            const [userProfile, setUserProfile] = React.useState(null);
+            const [showAuthModal, setShowAuthModal] = React.useState(false);
+            const [authMode, setAuthMode] = React.useState('login');
+            const [isAuthenticating, setIsAuthenticating] = React.useState(false);
+            
+            // Payment state
+            const [showPaymentModal, setShowPaymentModal] = React.useState(false);
+            const [pricingPackages, setPricingPackages] = React.useState(null);
+            const [selectedPackage, setSelectedPackage] = React.useState('creator');
+            
+            // Welcome/Success state
+            const [showWelcomeBanner, setShowWelcomeBanner] = React.useState(false);
+            const [welcomeData, setWelcomeData] = React.useState(null);
+            const [showConfetti, setShowConfetti] = React.useState(false);
+            const [showPaymentSuccess, setShowPaymentSuccess] = React.useState(false);
+            const [paymentSuccessData, setPaymentSuccessData] = React.useState(null);
+            
+            // API URL - Auto-detect local vs production
+            const API_BASE_URL = window.location.hostname === 'localhost' 
+                ? 'http://localhost:8001'  // Local Laravel backend
+                : 'https://web-production-5e40.up.railway.app';  // Production Railway
+            
+            // Loading messages
+            const loadingMessages = [
+                "🎨 Creating magic...",
+                "✨ AI is working hard...",
+                "🚀 Processing your image...",
+                "🌟 Almost there...",
+                "💫 Finalizing your masterpiece..."
+            ];
+
+            // Check for stored auth on mount
+            React.useEffect(() => {
+                const storedAuth = localStorage.getItem('supabase_auth');
+                const urlParams = new URLSearchParams(window.location.search);
+                
+                if (storedAuth) {
+                    try {
+                        const authData = JSON.parse(storedAuth);
+                        if (authData.user && authData.profile) {
+                            setUser(authData.user);
+                            setUserProfile(authData.profile);
+                            
+                            if (urlParams.get('auto_login') === 'true') {
+                                setTimeout(() => {
+                                    showWelcome(authData.user, authData.profile, true);
+                                }, 500);
+                            }
+                        } else {
+                            fetchUserProfile(authData.access_token);
+                        }
+                    } catch (error) {
+                        console.error('Error parsing stored auth:', error);
+                        localStorage.removeItem('supabase_auth');
+                    }
+                }
+                
+                // Check for payment success
+                if (urlParams.get('payment') === 'success') {
+                    setTimeout(() => refreshUserProfileAfterPayment(), 1000);
+                }
+            }, []);
+
+            // Load pricing packages
+            React.useEffect(() => {
+                loadPricingPackages();
+            }, []);
+
+            // Rotate loading messages
+            React.useEffect(() => {
+                let interval;
+                if (isGenerating) {
+                    interval = setInterval(() => {
+                        setCurrentLoadingMessage(prev => (prev + 1) % loadingMessages.length);
+                    }, 2000);
+                }
+                return () => {
+                    if (interval) clearInterval(interval);
+                };
+            }, [isGenerating]);
+
+            // Fetch user profile
+            const fetchUserProfile = async (accessToken) => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        setUser(data.user);
+                        setUserProfile(data.profile);
+                        
+                        const storedAuth = JSON.parse(localStorage.getItem('supabase_auth') || '{}');
+                        localStorage.setItem('supabase_auth', JSON.stringify({
+                            ...storedAuth,
+                            user: data.user,
+                            profile: data.profile
+                        }));
+                    }
+                } catch (error) {
+                    console.error('Error fetching user profile:', error);
+                }
+            };
+
+            // Load pricing packages
+            const loadPricingPackages = async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/payments/packages`);
+                    const data = await response.json();
+                    if (data.success) {
+                        setPricingPackages(data.packages);
+                    }
+                } catch (error) {
+                    console.error('Error loading pricing packages:', error);
+                }
+            };
+
+            // Refresh profile after payment
+            const refreshUserProfileAfterPayment = async () => {
+                try {
+                    const storedAuth = localStorage.getItem('supabase_auth');
+                    if (!storedAuth) return;
+
+                    const authData = JSON.parse(storedAuth);
+                    if (!authData.access_token) return;
+
+                    const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+                        headers: {
+                            'Authorization': `Bearer ${authData.access_token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        setUser(data.user);
+                        setUserProfile(data.profile);
+                        
+                        localStorage.setItem('supabase_auth', JSON.stringify({
+                            ...authData,
+                            user: data.user,
+                            profile: data.profile
+                        }));
+                        
+                        const packageInfo = pricingPackages ? 
+                            Object.values(pricingPackages).find(p => p.id === data.profile?.current_package) : null;
+                        
+                        setPaymentSuccessData({
+                            packageName: packageInfo?.name || 'Premium Package',
+                            packagePrice: packageInfo?.price || 0,
+                            generations: data.profile?.generations_remaining || 0,
+                            userName: data.user?.name || data.profile?.name || 'User',
+                            features: packageInfo?.features || []
+                        });
+                        
+                        setShowPaymentSuccess(true);
+                    }
+                } catch (error) {
+                    console.error('Error refreshing profile after payment:', error);
+                }
+            };
+
+            // Show welcome banner
+            const showWelcome = (userData, profileData, isNewUser = false) => {
+                setWelcomeData({
+                    name: userData?.name || profileData?.name || 'User',
+                    generations: profileData?.generations_remaining || 2,
+                    isNewUser: isNewUser,
+                    isPremium: profileData?.is_premium || false
+                });
+                
+                setShowWelcomeBanner(true);
+                setShowConfetti(true);
+                
+                setTimeout(() => setShowConfetti(false), 3000);
+                setTimeout(() => setShowWelcomeBanner(false), 8000);
+            };
+
+            // Toast notification
+            const showToast = (message, type = 'info') => {
+                const toast = document.createElement('div');
+                toast.className = `fixed top-4 right-4 px-6 py-4 rounded-lg shadow-lg z-50 ${
+                    type === 'error' ? 'bg-red-100 border border-red-300 text-red-700' :
+                    type === 'success' ? 'bg-green-100 border border-green-300 text-green-700' :
+                    'bg-blue-100 border border-blue-300 text-blue-700'
+                }`;
+                toast.innerHTML = message;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 3000);
+            };
+
+            // Handle file upload
+            const handleFileSelect = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    processImageFile(file);
+                }
+            };
+
+            const processImageFile = (file) => {
+                if (!file.type.startsWith('image/')) {
+                    showToast('Please upload a valid image file', 'error');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        // Resize if needed
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        const maxSize = 1024;
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > height && width > maxSize) {
+                            height = (height * maxSize) / width;
+                            width = maxSize;
+                        } else if (height > maxSize) {
+                            width = (width * maxSize) / height;
+                            height = maxSize;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        const base64 = canvas.toDataURL('image/jpeg', 0.9);
+                        setUploadedImage({ base64, preview: base64 });
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+
+            // Drag and drop handlers
+            const handleDragOver = (e) => {
+                e.preventDefault();
+                setIsDragging(true);
+            };
+
+            const handleDragLeave = (e) => {
+                e.preventDefault();
+                setIsDragging(false);
+            };
+
+            const handleDrop = (e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    processImageFile(file);
+                }
+            };
+
+            // Auth handlers
+            const handleAuth = async (email, password, name = '') => {
+                setIsAuthenticating(true);
+                
+                try {
+                    const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+                    const body = authMode === 'register' 
+                        ? { email, password, name }
+                        : { email, password };
+                    
+                    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        // Both register and login now auto-login
+                        localStorage.setItem('supabase_auth', JSON.stringify({
+                            access_token: data.access_token,
+                            refresh_token: data.refresh_token,
+                            user: data.user,
+                            profile: data.profile
+                        }));
+                        
+                        setUser(data.user);
+                        setUserProfile(data.profile);
+                        setShowAuthModal(false);
+                        
+                        if (authMode === 'register') {
+                            showToast(`✅ Account created! You have ${data.profile?.generations_remaining || 2} generations to use.`, 'success');
+                        } else {
+                            showToast('✅ Welcome back!', 'success');
+                        }
+                        
+                        // Don't auto-generate - let user click the button
+                        // This ensures they see their generation count first
+                    } else {
+                        showToast(data.message || 'Authentication failed', 'error');
+                    }
+                } catch (error) {
+                    console.error('Auth error:', error);
+                    showToast('Authentication failed. Please try again.', 'error');
+                } finally {
+                    setIsAuthenticating(false);
+                }
+            };
+
+            // Logout
+            const handleLogout = () => {
+                localStorage.removeItem('supabase_auth');
+                setUser(null);
+                setUserProfile(null);
+                showToast('Logged out successfully', 'info');
+            };
+
+            // Generate button click - check auth first
+            const handleGenerate = () => {
+                if (!uploadedImage) {
+                    showToast('Please upload an image first', 'error');
+                    return;
+                }
+                
+                if (!user) {
+                    // Show auth modal
+                    setShowAuthModal(true);
+                } else {
+                    // User is logged in, proceed
+                    proceedWithGeneration();
+                }
+            };
+
+            // Actual generation logic
+            const proceedWithGeneration = async () => {
+                // Check generations remaining (need at least 2)
+                if (!userProfile || userProfile.generations_remaining < 2) {
+                    showToast('Insufficient generations! Please upgrade.', 'error');
+                    setShowPaymentModal(true);
+                    return;
+                }
+                
+                setIsGenerating(true);
+                setCurrentLoadingMessage(0);
+                
+                try {
+                    // Call AI transformation API
+                    const response = await fetch(`${API_BASE_URL}/api/fal/direct-base64-transform`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            image: uploadedImage.base64,
+                            prompt: "Transform this image with AI enhancement"
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success && data.image) {
+                        setGeneratedImage(data.image);
+                        
+                        // Deduct 2 generations
+                        const deductResponse = await fetch(`${API_BASE_URL}/api/auth/consume-transformation`, {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${JSON.parse(localStorage.getItem('supabase_auth') || '{}').access_token}`
+                            },
+                            body: JSON.stringify({
+                                user_id: userProfile.id,
+                                generations_to_deduct: 2
+                            })
+                        });
+                        
+                        if (deductResponse.ok) {
+                            const deductData = await deductResponse.json();
+                            setUserProfile(prev => ({
+                                ...prev,
+                                generations_remaining: deductData.generations_remaining || (prev.generations_remaining - 2)
+                            }));
+                            
+                            // Update localStorage
+                            const storedAuth = JSON.parse(localStorage.getItem('supabase_auth') || '{}');
+                            if (storedAuth.profile) {
+                                storedAuth.profile.generations_remaining = deductData.generations_remaining || (userProfile.generations_remaining - 2);
+                                localStorage.setItem('supabase_auth', JSON.stringify(storedAuth));
+                            }
+                            
+                            showToast('✅ Generation successful! 2 generations used.', 'success');
+                        }
+                    } else {
+                        showToast(data.error || 'Generation failed', 'error');
+                    }
+                } catch (error) {
+                    console.error('Generation error:', error);
+                    showToast('Generation failed. Please try again.', 'error');
+                } finally {
+                    setIsGenerating(false);
+                }
+            };
+
+            // Download image
+            const handleDownload = async () => {
+                if (!generatedImage) return;
+                
+                try {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.src = generatedImage;
+                    
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                    });
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const blob = await new Promise(resolve => {
+                        canvas.toBlob(resolve, 'image/png', 1.0);
+                    });
+                    
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'ai-generated-image.png';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    
+                    showToast('✅ Image downloaded!', 'success');
+                } catch (error) {
+                    console.error('Download error:', error);
+                    showToast('Download failed', 'error');
+                }
+            };
+
+            // Share image
+            const handleShare = async () => {
+                if (!generatedImage) return;
+                
+                try {
+                    if (navigator.share) {
+                        const img = new Image();
+                        img.crossOrigin = 'anonymous';
+                        img.src = generatedImage;
+                        
+                        await new Promise((resolve, reject) => {
+                            img.onload = resolve;
+                            img.onerror = reject;
+                        });
+                        
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.naturalWidth;
+                        canvas.height = img.naturalHeight;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        
+                        const blob = await new Promise(resolve => {
+                            canvas.toBlob(resolve, 'image/png', 1.0);
+                        });
+                        
+                        const file = new File([blob], 'ai-generated-image.png', { type: 'image/png' });
+                        
+                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                            await navigator.share({
+                                title: 'AI Generated Image',
+                                text: 'Check out this AI-generated image!',
+                                files: [file]
+                            });
+                            showToast('✅ Shared successfully!', 'success');
+                        }
+                    } else {
+                        showToast('Sharing not supported on this device', 'error');
+                    }
+                } catch (error) {
+                    console.error('Share error:', error);
+                }
+            };
+
+            // Payment handlers
+            const handleUpgrade = async () => {
+                if (!user || !userProfile) {
+                    showToast('Please login first', 'error');
+                    return;
+                }
+                
+                try {
+                    const selectedPkg = pricingPackages[selectedPackage];
+                    const response = await fetch(`${API_BASE_URL}/api/payments/create-checkout-session`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: userProfile.id,
+                            user_email: userProfile.email,
+                            package: selectedPackage,
+                            success_url: window.location.href + '?payment=success',
+                            cancel_url: window.location.href + '?payment=cancelled'
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.checkout_url) {
+                        window.open(data.checkout_url, '_blank');
+                        showToast('💳 Payment page opened in new tab', 'info');
+                        setShowPaymentModal(false);
+                    } else {
+                        showToast('Failed to create checkout session', 'error');
+                    }
+                } catch (error) {
+                    console.error('Payment error:', error);
+                    showToast('Payment failed. Please try again.', 'error');
+                }
+            };
+
+            // Render
+            return (
+                <div className="simple-widget p-4 md:p-8">
+                    <div className="max-w-4xl mx-auto">
+                        {/* Header */}
+                        <div className="text-center mb-8">
+                            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                                AI Image Generator
+                            </h1>
+                            <p className="text-gray-600">Upload an image and let AI work its magic</p>
+                        </div>
+
+                        {/* User Info Bar */}
+                        {user && (
+                            <div className="bg-white rounded-xl shadow-lg p-4 mb-6 flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                                        {userProfile?.name?.charAt(0) || 'U'}
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900">{userProfile?.name || 'User'}</p>
+                                        <p className="text-sm text-gray-500">{userProfile?.email}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg font-semibold">
+                                        {userProfile?.generations_remaining || 0} generations
+                                    </div>
+                                    <button 
+                                        onClick={handleLogout}
+                                        className="text-gray-600 hover:text-gray-900 text-sm"
+                                    >
+                                        Logout
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Main Content Area */}
+                        <div className="bg-white rounded-2xl shadow-2xl p-8">
+                            {!generatedImage ? (
+                                <>
+                                    {/* Upload Area */}
+                                    {!uploadedImage ? (
+                                        <div
+                                            className={`upload-area rounded-xl p-8 text-center cursor-pointer ${
+                                                isDragging ? 'drag-over' : ''
+                                            }`}
+                                            onDragOver={handleDragOver}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={handleDrop}
+                                            onClick={() => document.getElementById('file-input').click()}
+                                        >
+                                            <Upload className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                                Upload Your Image
+                                            </h3>
+                                            <p className="text-sm text-gray-500 mb-2">
+                                                Drag and drop or click to browse
+                                            </p>
+                                            <p className="text-xs text-gray-400">
+                                                Supports JPG, PNG, WebP
+                                            </p>
+                                            <input
+                                                id="file-input"
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleFileSelect}
+                                                className="hidden"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {/* Preview & Generate */}
+                                            <div className="space-y-6">
+                                                {!isGenerating ? (
+                                                    <>
+                                                        <div className="relative">
+                                                            <img 
+                                                                src={uploadedImage.preview} 
+                                                                alt="Uploaded" 
+                                                                className="w-full rounded-xl shadow-lg object-contain"
+                                                                style={{ maxHeight: '400px' }}
+                                                            />
+                                                            <button
+                                                                onClick={() => setUploadedImage(null)}
+                                                                className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100"
+                                                            >
+                                                                <X className="w-5 h-5 text-gray-600" />
+                                                            </button>
+                                                        </div>
+                                                        
+                                                        <button
+                                                            onClick={handleGenerate}
+                                                            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                                                        >
+                                                            <Sparkles className="w-6 h-6" />
+                                                            Generate with AI
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <div className="text-center py-12">
+                                                        <Loader className="w-16 h-16 mx-auto animate-spin text-purple-600 mb-4" />
+                                                        <p className="text-xl font-semibold text-gray-900 mb-2">
+                                                            {loadingMessages[currentLoadingMessage]}
+                                                        </p>
+                                                        <p className="text-sm text-gray-500">
+                                                            This may take a few moments...
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    {/* Result Display with Before/After */}
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="text-2xl font-bold text-gray-900">
+                                                Your AI-Generated Image
+                                            </h3>
+                                            <button
+                                                onClick={() => {
+                                                    setGeneratedImage(null);
+                                                    setUploadedImage(null);
+                                                }}
+                                                className="text-purple-600 hover:text-purple-700 font-semibold"
+                                            >
+                                                Create New
+                                            </button>
+                                        </div>
+                                        
+                                        {/* Before/After Slider */}
+                                        <div className="relative">
+                                            <div className="relative overflow-hidden rounded-xl" style={{ maxHeight: '600px' }}>
+                                                {/* Generated image (base layer) */}
+                                                <img 
+                                                    src={generatedImage} 
+                                                    alt="Generated" 
+                                                    className="w-full h-auto object-contain"
+                                                    style={{ maxHeight: '600px' }}
+                                                />
+                                                {/* Original image (overlay) */}
+                                                <div 
+                                                    className="absolute top-0 left-0 h-full overflow-hidden"
+                                                    style={{ width: `${sliderPosition}%` }}
+                                                >
+                                                    <img 
+                                                        src={uploadedImage.preview} 
+                                                        alt="Original" 
+                                                        className="w-full h-full object-contain"
+                                                        style={{ 
+                                                            width: `${100 / sliderPosition * 100}%`,
+                                                            maxWidth: 'none',
+                                                            maxHeight: '600px'
+                                                        }}
+                                                    />
+                                                </div>
+                                                {/* Slider handle */}
+                                                <div 
+                                                    className="absolute top-0 bottom-0 w-1 bg-white shadow-lg"
+                                                    style={{ left: `${sliderPosition}%` }}
+                                                >
+                                                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
+                                                        <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                value={sliderPosition}
+                                                onChange={(e) => setSliderPosition(e.target.value)}
+                                                className="slider w-full mt-4"
+                                            />
+                                            <div className="flex justify-between text-sm text-gray-500 mt-2">
+                                                <span>Original</span>
+                                                <span>AI Generated</span>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Action Buttons */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <button
+                                                onClick={handleDownload}
+                                                className="bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 flex items-center justify-center gap-2"
+                                            >
+                                                <Download className="w-5 h-5" />
+                                                Download
+                                            </button>
+                                            <button
+                                                onClick={handleShare}
+                                                className="bg-pink-600 text-white py-3 rounded-xl font-semibold hover:bg-pink-700 flex items-center justify-center gap-2"
+                                            >
+                                                <Share className="w-5 h-5" />
+                                                Share
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        {!user && (
+                            <div className="text-center mt-8">
+                                <p className="text-gray-600">
+                                    Already have an account?{' '}
+                                    <button 
+                                        onClick={() => setShowAuthModal(true)}
+                                        className="text-purple-600 font-semibold hover:text-purple-700"
+                                    >
+                                        Sign In
+                                    </button>
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Auth Modal */}
+                    {showAuthModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-2xl p-8 w-full max-w-md">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-2xl font-bold text-gray-900">
+                                        {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
+                                    </h2>
+                                    <button onClick={() => setShowAuthModal(false)}>
+                                        <X className="w-6 h-6 text-gray-400 hover:text-gray-600" />
+                                    </button>
+                                </div>
+                                
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const formData = new FormData(e.target);
+                                    handleAuth(
+                                        formData.get('email'),
+                                        formData.get('password'),
+                                        formData.get('name') || ''
+                                    );
+                                }}>
+                                    {authMode === 'register' && (
+                                        <div className="mb-4">
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Name
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                required
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                placeholder="Your name"
+                                            />
+                                        </div>
+                                    )}
+                                    
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Email
+                                        </label>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            required
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            placeholder="you@example.com"
+                                        />
+                                    </div>
+                                    
+                                    <div className="mb-6">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Password
+                                        </label>
+                                        <input
+                                            type="password"
+                                            name="password"
+                                            required
+                                            minLength="6"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
+                                    
+                                    <button
+                                        type="submit"
+                                        disabled={isAuthenticating}
+                                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+                                    >
+                                        {isAuthenticating ? 'Processing...' : (authMode === 'login' ? 'Sign In' : 'Create Account')}
+                                    </button>
+                                </form>
+                                
+                                <div className="mt-4 text-center">
+                                    <button
+                                        onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+                                        className="text-purple-600 text-sm hover:text-purple-700"
+                                    >
+                                        {authMode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Payment Modal */}
+                    {showPaymentModal && pricingPackages && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-2xl p-8 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-3xl font-bold text-gray-900">Upgrade Your Plan</h2>
+                                    <button onClick={() => setShowPaymentModal(false)}>
+                                        <X className="w-6 h-6 text-gray-400 hover:text-gray-600" />
+                                    </button>
+                                </div>
+                                
+                                <div className="grid md:grid-cols-3 gap-6">
+                                    {Object.values(pricingPackages).map((pkg) => (
+                                        <div 
+                                            key={pkg.id}
+                                            onClick={() => setSelectedPackage(pkg.id)}
+                                            className={`relative rounded-2xl border-2 p-6 cursor-pointer transition-all ${
+                                                selectedPackage === pkg.id 
+                                                    ? 'border-purple-500 bg-purple-50 shadow-xl scale-105' 
+                                                    : 'border-gray-200 hover:border-purple-300 hover:shadow-lg'
+                                            }`}
+                                        >
+                                            {pkg.popular && (
+                                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded-full text-xs font-bold">
+                                                    MOST POPULAR
+                                                </div>
+                                            )}
+                                            <h3 className="text-xl font-bold text-gray-900 mb-2">{pkg.name}</h3>
+                                            <div className="mb-4">
+                                                <span className="text-4xl font-bold text-gray-900">${pkg.price}</span>
+                                            </div>
+                                            <p className="text-gray-600 mb-4">{pkg.description}</p>
+                                            <div className="space-y-2 mb-6">
+                                                <div className="flex items-center text-sm text-gray-700">
+                                                    <span className="text-green-500 mr-2">✓</span>
+                                                    {pkg.generations} generations ({pkg.tokens} tokens)
+                                                </div>
+                                                {pkg.features.map((feature, idx) => (
+                                                    <div key={idx} className="flex items-center text-sm text-gray-700">
+                                                        <span className="text-green-500 mr-2">✓</span>
+                                                        {feature}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <button
+                                    onClick={handleUpgrade}
+                                    className="mt-8 w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-xl transition-all"
+                                >
+                                    Upgrade to {pricingPackages[selectedPackage]?.name} - ${pricingPackages[selectedPackage]?.price}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Welcome Banner */}
+                    {showWelcomeBanner && welcomeData && (
+                        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-white rounded-2xl shadow-2xl p-6 z-50 max-w-md w-full mx-4">
+                            <div className="text-center">
+                                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Sparkles className="w-8 h-8 text-white" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                                    Welcome{welcomeData.isNewUser ? ' aboard' : ' back'}, {welcomeData.name}!
+                                </h3>
+                                <p className="text-gray-600">
+                                    You have {welcomeData.generations} generations remaining
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Confetti */}
+                    {showConfetti && (
+                        <div className="confetti-container">
+                            {[...Array(50)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="confetti"
+                                    style={{
+                                        left: `${Math.random() * 100}%`,
+                                        background: ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'][Math.floor(Math.random() * 5)],
+                                        animationDelay: `${Math.random() * 0.5}s`,
+                                        animationDuration: `${2 + Math.random() * 2}s`
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Payment Success Modal */}
+                    {showPaymentSuccess && paymentSuccessData && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-2xl p-8 w-full max-w-md text-center">
+                                <div className="w-20 h-20 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <h2 className="text-3xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
+                                <p className="text-gray-600 mb-6">
+                                    Welcome to {paymentSuccessData.packageName}
+                                </p>
+                                <div className="bg-purple-50 rounded-xl p-4 mb-6">
+                                    <p className="text-sm text-gray-600 mb-2">Your new balance</p>
+                                    <p className="text-3xl font-bold text-purple-600">{paymentSuccessData.generations} generations</p>
+                                </div>
+                                <button
+                                    onClick={() => setShowPaymentSuccess(false)}
+                                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg"
+                                >
+                                    Start Creating!
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Render the app
+        ReactDOM.render(<SimpleWidget />, document.getElementById('simple-widget'));
+    </script>
+</body>
+</html>
+

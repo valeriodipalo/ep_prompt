@@ -28,30 +28,43 @@ class FalAIDirectController extends Controller
         Log::info('FalAI Direct: Starting base64 transformation');
 
         try {
-            // Validate required fields
-            $request->validate([
-                'gender' => 'required|string|in:male,female',
-                'hairstyle' => 'required|string',
-                'color' => 'required|string',
-                'base64_image' => 'required|string' // Base64 image data
-            ]);
+            // Support both old format (gender/hairstyle/color) and new simplified format (image/prompt)
+            $isSimplifiedFormat = $request->has('image') && $request->has('prompt');
+            
+            if ($isSimplifiedFormat) {
+                // New simplified format - just image and prompt
+                $request->validate([
+                    'image' => 'required|string',
+                    'prompt' => 'required|string'
+                ]);
+                
+                $base64Data = $request->input('image');
+                $prompt = $request->input('prompt');
+            } else {
+                // Old format - gender, hairstyle, color
+                $request->validate([
+                    'gender' => 'required|string|in:male,female',
+                    'hairstyle' => 'required|string',
+                    'color' => 'required|string',
+                    'base64_image' => 'required|string'
+                ]);
+                
+                $base64Data = $request->input('base64_image');
+                $prompt = $this->createHairstylePrompt(
+                    $request->gender,
+                    $request->hairstyle,
+                    $request->color
+                );
+            }
 
             if (!$this->falKey) {
                 throw new \Exception('FAL API key not configured');
             }
 
             // Extract base64 data (remove data:image/jpeg;base64, prefix if present)
-            $base64Data = $request->input('base64_image');
             if (strpos($base64Data, 'data:image') === 0) {
                 $base64Data = substr($base64Data, strpos($base64Data, ',') + 1);
             }
-
-            // Create prompt based on user selections
-            $prompt = $this->createHairstylePrompt(
-                $request->gender,
-                $request->hairstyle,
-                $request->color
-            );
 
             Log::info('FalAI Direct: Generated prompt', ['prompt' => $prompt]);
 
@@ -76,8 +89,9 @@ class FalAIDirectController extends Controller
                 
                 return response()->json([
                     'success' => true,
+                    'image' => $result['images'][0]['url'],  // Changed from result_url to image for consistency
                     'result_url' => $result['images'][0]['url'],
-                    'description' => $result['description'],
+                    'description' => $result['description'] ?? 'AI transformation complete',
                     'method' => 'Base64 Direct Upload 🚀',
                     'prompt_used' => $prompt
                 ]);
