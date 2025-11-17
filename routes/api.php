@@ -27,6 +27,7 @@ Route::prefix('auth')->group(function () {
 // AI transformation routes
 Route::prefix('fal')->group(function () {
     Route::post('/direct-base64-transform', [FalAIDirectController::class, 'directTransform']);
+    Route::post('/deblur', [FalAIDirectController::class, 'deblur']);
 });
 
 // Payment routes

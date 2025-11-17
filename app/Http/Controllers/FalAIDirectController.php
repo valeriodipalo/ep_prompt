@@ -240,4 +240,105 @@ class FalAIDirectController extends Controller
         
         return $basePrompt;
     }
+
+    /**
+     * NAFNet Deblur - Fix blurriness and noise in images
+     * Uses fal-ai/nafnet/deblur API
+     */
+    public function deblur(Request $request)
+    {
+        Log::info('NAFNet Deblur: Starting image restoration');
+
+        try {
+            $request->validate([
+                'image_url' => 'required|string',
+                'seed' => 'nullable|integer'
+            ]);
+
+            if (!$this->falKey) {
+                throw new \Exception('FAL API key not configured');
+            }
+
+            $imageUrl = $request->input('image_url');
+            $seed = $request->input('seed');
+
+            // Check if image_url is a base64 data URI
+            if (strpos($imageUrl, 'data:image') === 0) {
+                // It's already a data URI, use it directly
+                Log::info('NAFNet Deblur: Using base64 data URI');
+            } else if (strpos($imageUrl, 'http') !== 0) {
+                // It's a base64 string without the data URI prefix
+                $imageUrl = 'data:image/jpeg;base64,' . $imageUrl;
+                Log::info('NAFNet Deblur: Converted base64 to data URI');
+            }
+
+            // Prepare API payload
+            $payload = [
+                'image_url' => $imageUrl
+            ];
+
+            if ($seed !== null) {
+                $payload['seed'] = $seed;
+            }
+
+            Log::info('NAFNet Deblur: Calling fal.ai API', ['has_seed' => $seed !== null]);
+
+            // Call fal.ai NAFNet deblur API
+            $response = Http::withHeaders([
+                'Authorization' => 'Key ' . $this->falKey,
+                'Content-Type' => 'application/json'
+            ])->post('https://fal.run/fal-ai/nafnet/deblur', $payload);
+
+            Log::info('NAFNet Deblur: API Response', [
+                'status' => $response->status(),
+                'body_preview' => substr($response->body(), 0, 200)
+            ]);
+
+            if ($response->successful()) {
+                $result = $response->json();
+                
+                // NAFNet returns the result in 'image' field with metadata
+                if (isset($result['image']['url'])) {
+                    return response()->json([
+                        'success' => true,
+                        'image' => $result['image']['url'],
+                        'image_metadata' => [
+                            'width' => $result['image']['width'] ?? null,
+                            'height' => $result['image']['height'] ?? null,
+                            'file_size' => $result['image']['file_size'] ?? null,
+                            'content_type' => $result['image']['content_type'] ?? null
+                        ],
+                        'method' => 'NAFNet Deblur 🔍',
+                        'description' => 'Image successfully deblurred and restored'
+                    ]);
+                } else {
+                    throw new \Exception('Invalid response format from NAFNet API');
+                }
+            } else {
+                throw new \Exception('fal.ai NAFNet API call failed: ' . $response->body());
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('NAFNet Deblur: Validation failed', [
+                'errors' => $e->errors()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Validation failed',
+                'details' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('NAFNet Deblur: Restoration failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

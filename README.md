@@ -41,9 +41,20 @@ Required in `.env`:
 - `SUPABASE_URL` - Your Supabase project URL
 - `SUPABASE_ANON_KEY` - Supabase anon key
 - `SUPABASE_SERVICE_KEY` - Supabase service key
-- `FAL_KEY` - fal.ai API key
+- `FAL_KEY` - fal.ai API key (used for all AI models)
 - `STRIPE_KEY` - Stripe publishable key (test mode)
 - `STRIPE_SECRET` - Stripe secret key (test mode)
+
+## AI Models
+
+This application uses fal.ai for AI-powered image processing:
+
+1. **nano-banana/edit** - General image transformation with prompts
+2. **NAFNet Deblur** - Image deblurring and noise reduction
+
+Both models use the same `FAL_KEY` credential and deduct 1 generation credit per use.
+
+For detailed NAFNet Deblur API documentation, see [NAFNET_DEBLUR_API.md](NAFNET_DEBLUR_API.md).
 
 ## Deployment
 
@@ -55,11 +66,17 @@ Set environment variables in Railway dashboard, push to deploy.
 
 ## API Endpoints
 
+### Authentication
 - `POST /api/auth/register` - User registration
 - `POST /api/auth/login` - User login
 - `GET /api/auth/profile` - Get user profile
 - `POST /api/auth/consume-transformation` - Deduct generations
-- `POST /api/fal/direct-base64-transform` - AI transformation
+
+### AI Transformations
+- `POST /api/fal/direct-base64-transform` - AI image transformation (nano-banana)
+- `POST /api/fal/deblur` - Image deblur & denoise (NAFNet)
+
+### Payments
 - `GET /api/payments/packages` - Get pricing
 - `POST /api/payments/create-checkout-session` - Stripe checkout
 - `POST /api/payments/webhook` - Stripe webhook

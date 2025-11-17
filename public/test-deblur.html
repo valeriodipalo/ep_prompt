@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAFNet Deblur - Test Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-gray-50 to-purple-50 min-h-screen p-8">
+    <div class="max-w-5xl mx-auto">
+        <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-8 text-center">
+            NAFNet Deblur Test
+        </h1>
+
+        <!-- Upload Section -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <h2 class="text-2xl font-bold mb-4">Upload Image to Deblur</h2>
+            
+            <input 
+                type="file" 
+                id="imageUpload" 
+                accept="image/*"
+                class="mb-4 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+            />
+
+            <button 
+                id="deblurBtn"
+                class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold hover:shadow-xl transition-all disabled:opacity-50"
+            >
+                🔍 Deblur Image
+            </button>
+
+            <div id="status" class="mt-4 text-center text-sm"></div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="hidden bg-white rounded-2xl shadow-xl p-8">
+            <h2 class="text-2xl font-bold mb-6">Before & After Comparison</h2>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Before -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-3 text-gray-700">Before (Original)</h3>
+                    <img id="beforeImg" class="w-full rounded-lg shadow-lg" />
+                </div>
+                
+                <!-- After -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-3 text-purple-600">After (Deblurred)</h3>
+                    <img id="afterImg" class="w-full rounded-lg shadow-lg" />
+                </div>
+            </div>
+
+            <!-- Metadata -->
+            <div id="metadata" class="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h4 class="font-semibold mb-2">Image Metadata</h4>
+                <div id="metadataContent" class="text-sm text-gray-600"></div>
+            </div>
+
+            <!-- Download Button -->
+            <button 
+                id="downloadBtn"
+                class="mt-6 w-full bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700"
+            >
+                ⬇️ Download Deblurred Image
+            </button>
+        </div>
+
+        <!-- Test with Sample Image -->
+        <div class="mt-8 bg-white rounded-2xl shadow-xl p-8">
+            <h2 class="text-2xl font-bold mb-4">Quick Test</h2>
+            <p class="text-gray-600 mb-4">Don't have a blurry image? Try our sample:</p>
+            <button 
+                id="sampleBtn"
+                class="bg-blue-600 text-white py-3 px-6 rounded-xl font-semibold hover:bg-blue-700"
+            >
+                🧪 Test with Sample Blurry Image
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8001';
+        const SAMPLE_IMAGE_URL = 'https://storage.googleapis.com/falserverless/nafnet/blurry.png';
+        
+        let uploadedImage = null;
+        let deblurredImageUrl = null;
+
+        const imageUpload = document.getElementById('imageUpload');
+        const deblurBtn = document.getElementById('deblurBtn');
+        const sampleBtn = document.getElementById('sampleBtn');
+        const status = document.getElementById('status');
+        const results = document.getElementById('results');
+        const beforeImg = document.getElementById('beforeImg');
+        const afterImg = document.getElementById('afterImg');
+        const metadataContent = document.getElementById('metadataContent');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        // Handle file upload
+        imageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    uploadedImage = event.target.result;
+                    status.innerHTML = '<span class="text-green-600">✓ Image loaded. Ready to deblur!</span>';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Deblur function
+        async function deblurImage(imageData) {
+            deblurBtn.disabled = true;
+            status.innerHTML = '<span class="text-blue-600">⏳ Deblurring... Please wait (10-30 seconds)</span>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/fal/deblur`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image_url: imageData })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    deblurredImageUrl = data.image;
+                    
+                    // Show results
+                    beforeImg.src = imageData.startsWith('http') ? imageData : imageData;
+                    afterImg.src = data.image;
+                    results.classList.remove('hidden');
+                    
+                    // Show metadata
+                    const meta = data.image_metadata;
+                    metadataContent.innerHTML = `
+                        <p><strong>Width:</strong> ${meta.width}px</p>
+                        <p><strong>Height:</strong> ${meta.height}px</p>
+                        <p><strong>File Size:</strong> ${(meta.file_size / 1024 / 1024).toFixed(2)} MB</p>
+                        <p><strong>Format:</strong> ${meta.content_type}</p>
+                    `;
+                    
+                    status.innerHTML = '<span class="text-green-600">✅ Deblur complete!</span>';
+                    
+                    // Scroll to results
+                    results.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    status.innerHTML = `<span class="text-red-600">❌ Error: ${data.error}</span>`;
+                }
+            } catch (error) {
+                status.innerHTML = `<span class="text-red-600">❌ Error: ${error.message}</span>`;
+            } finally {
+                deblurBtn.disabled = false;
+            }
+        }
+
+        // Deblur button
+        deblurBtn.addEventListener('click', () => {
+            if (!uploadedImage) {
+                status.innerHTML = '<span class="text-red-600">❌ Please upload an image first</span>';
+                return;
+            }
+            deblurImage(uploadedImage);
+        });
+
+        // Sample button
+        sampleBtn.addEventListener('click', () => {
+            uploadedImage = SAMPLE_IMAGE_URL;
+            status.innerHTML = '<span class="text-green-600">✓ Sample image loaded. Click "Deblur Image" to test.</span>';
+            deblurImage(SAMPLE_IMAGE_URL);
+        });
+
+        // Download button
+        downloadBtn.addEventListener('click', async () => {
+            if (!deblurredImageUrl) return;
+            
+            try {
+                const response = await fetch(deblurredImageUrl);
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'deblurred-image.png';
+                a.click();
+                
+                URL.revokeObjectURL(url);
+                status.innerHTML = '<span class="text-green-600">✅ Image downloaded!</span>';
+            } catch (error) {
+                status.innerHTML = `<span class="text-red-600">❌ Download failed: ${error.message}</span>`;
+            }
+        });
+    </script>
+</body>
+</html>
+
