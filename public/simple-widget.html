@@ -504,8 +504,8 @@
 
             // Actual generation logic
             const proceedWithGeneration = async () => {
-                // Check generations remaining (need at least 2)
-                if (!userProfile || userProfile.generations_remaining < 2) {
+                // Check generations remaining (need at least 1)
+                if (!userProfile || userProfile.generations_remaining < 1) {
                     showToast('Insufficient generations! Please upgrade.', 'error');
                     setShowPaymentModal(true);
                     return;
@@ -530,7 +530,7 @@
                     if (response.ok && data.success && data.image) {
                         setGeneratedImage(data.image);
                         
-                        // Deduct 2 generations
+                        // Deduct 1 generation
                         const deductResponse = await fetch(`${API_BASE_URL}/api/auth/consume-transformation`, {
                             method: 'POST',
                             headers: { 
@@ -539,7 +539,7 @@
                             },
                             body: JSON.stringify({
                                 user_id: userProfile.id,
-                                generations_to_deduct: 2
+                                generations_to_deduct: 1
                             })
                         });
                         
@@ -547,17 +547,17 @@
                             const deductData = await deductResponse.json();
                             setUserProfile(prev => ({
                                 ...prev,
-                                generations_remaining: deductData.generations_remaining || (prev.generations_remaining - 2)
+                                generations_remaining: deductData.generations_remaining || (prev.generations_remaining - 1)
                             }));
                             
                             // Update localStorage
                             const storedAuth = JSON.parse(localStorage.getItem('supabase_auth') || '{}');
                             if (storedAuth.profile) {
-                                storedAuth.profile.generations_remaining = deductData.generations_remaining || (userProfile.generations_remaining - 2);
+                                storedAuth.profile.generations_remaining = deductData.generations_remaining || (userProfile.generations_remaining - 1);
                                 localStorage.setItem('supabase_auth', JSON.stringify(storedAuth));
                             }
                             
-                            showToast('✅ Generation successful! 2 generations used.', 'success');
+                            showToast('✅ Generation successful! 1 generation used.', 'success');
                         }
                     } else {
                         showToast(data.error || 'Generation failed', 'error');
