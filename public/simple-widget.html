@@ -159,9 +159,6 @@
             const [currentLoadingMessage, setCurrentLoadingMessage] = React.useState(0);
             const [sliderPosition, setSliderPosition] = React.useState(50);
             
-            // AI Mode state
-            const [aiMode, setAiMode] = React.useState('deblur'); // 'transform' or 'deblur'
-            
             // Auth state
             const [user, setUser] = React.useState(null);
             const [userProfile, setUserProfile] = React.useState(null);
@@ -187,22 +184,13 @@
                 : 'https://web-production-ecf2.up.railway.app';  // Production Railway
             
             // Loading messages
-            const loadingMessages = {
-                transform: [
-                    "🎨 Creating magic...",
-                    "✨ AI is working hard...",
-                    "🚀 Processing your image...",
-                    "🌟 Almost there...",
-                    "💫 Finalizing your masterpiece..."
-                ],
-                deblur: [
-                    "🔍 Analyzing image...",
-                    "✨ Removing blur and noise...",
-                    "🚀 Enhancing clarity...",
-                    "🌟 Sharpening details...",
-                    "💫 Finalizing restoration..."
-                ]
-            };
+            const loadingMessages = [
+                "🔍 Analyzing image...",
+                "✨ Removing blur and noise...",
+                "🚀 Enhancing clarity...",
+                "🌟 Sharpening details...",
+                "💫 Finalizing restoration..."
+            ];
 
             // Check for stored auth on mount
             React.useEffect(() => {
@@ -246,13 +234,13 @@
                 let interval;
                 if (isGenerating) {
                     interval = setInterval(() => {
-                        setCurrentLoadingMessage(prev => (prev + 1) % loadingMessages[aiMode].length);
+                        setCurrentLoadingMessage(prev => (prev + 1) % loadingMessages.length);
                     }, 2000);
                 }
                 return () => {
                     if (interval) clearInterval(interval);
                 };
-            }, [isGenerating, aiMode]);
+            }, [isGenerating]);
 
             // Fetch user profile
             const fetchUserProfile = async (accessToken) => {
@@ -527,32 +515,16 @@
                 setCurrentLoadingMessage(0);
                 
                 try {
-                    let response, data;
+                    // Call NAFNet Deblur API
+                    const response = await fetch(`${API_BASE_URL}/api/fal/deblur`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            image_url: uploadedImage.base64
+                        })
+                    });
                     
-                    if (aiMode === 'deblur') {
-                        // Call NAFNet Deblur API
-                        response = await fetch(`${API_BASE_URL}/api/fal/deblur`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                image_url: uploadedImage.base64
-                            })
-                        });
-                        
-                        data = await response.json();
-                    } else {
-                        // Call AI transformation API
-                        response = await fetch(`${API_BASE_URL}/api/fal/direct-base64-transform`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                image: uploadedImage.base64,
-                                prompt: "Transform this image with AI enhancement"
-                            })
-                        });
-                        
-                        data = await response.json();
-                    }
+                    const data = await response.json();
                     
                     if (response.ok && data.success && data.image) {
                         setGeneratedImage(data.image);
@@ -584,15 +556,14 @@
                                 localStorage.setItem('supabase_auth', JSON.stringify(storedAuth));
                             }
                             
-                            const modeText = aiMode === 'deblur' ? 'Deblur' : 'Generation';
-                            showToast(`✅ ${modeText} successful! 1 generation used.`, 'success');
+                            showToast('✅ Deblur successful! 1 generation used.', 'success');
                         }
                     } else {
-                        showToast(data.error || 'Generation failed', 'error');
+                        showToast(data.error || 'Deblur failed', 'error');
                     }
                 } catch (error) {
-                    console.error('Generation error:', error);
-                    showToast('Generation failed. Please try again.', 'error');
+                    console.error('Deblur error:', error);
+                    showToast('Deblur failed. Please try again.', 'error');
                 } finally {
                     setIsGenerating(false);
                 }
@@ -721,52 +692,11 @@
                     <div className="max-w-4xl mx-auto">
                         {/* Header */}
                         <div className="text-center mb-8">
-                            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-                                AI Image {aiMode === 'deblur' ? 'Deblur' : 'Generator'}
+                            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">
+                                AI Image Deblur
                             </h1>
                             <p className="text-gray-600">
-                                {aiMode === 'deblur' 
-                                    ? 'Remove blur and noise from your images with AI'
-                                    : 'Upload an image and let AI work its magic'
-                                }
-                            </p>
-                        </div>
-                        
-                        {/* AI Mode Selector */}
-                        <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => {
-                                        setAiMode('deblur');
-                                        setGeneratedImage(null);
-                                    }}
-                                    className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
-                                        aiMode === 'deblur'
-                                            ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                    }`}
-                                >
-                                    🔍 Deblur & Restore
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setAiMode('transform');
-                                        setGeneratedImage(null);
-                                    }}
-                                    className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
-                                        aiMode === 'transform'
-                                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                    }`}
-                                >
-                                    ✨ AI Transform
-                                </button>
-                            </div>
-                            <p className="text-xs text-gray-500 text-center mt-2">
-                                {aiMode === 'deblur'
-                                    ? 'Fix blurry photos and reduce noise'
-                                    : 'Transform images with AI enhancement'
-                                }
+                                Remove blur and noise from your images with AI
                             </p>
                         </div>
 
@@ -852,38 +782,20 @@
                                                         
                                                         <button
                                                             onClick={handleGenerate}
-                                                            className={`w-full ${
-                                                                aiMode === 'deblur'
-                                                                    ? 'bg-gradient-to-r from-blue-600 to-blue-700'
-                                                                    : 'bg-gradient-to-r from-purple-600 to-pink-600'
-                                                            } text-white py-4 rounded-xl font-semibold text-lg hover:shadow-xl transition-all flex items-center justify-center gap-2`}
+                                                            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold text-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
                                                         >
-                                                            {aiMode === 'deblur' ? (
-                                                                <>
-                                                                    <span className="text-2xl">🔍</span>
-                                                                    Deblur Image
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Sparkles className="w-6 h-6" />
-                                                                    Generate with AI
-                                                                </>
-                                                            )}
+                                                            <span className="text-2xl">🔍</span>
+                                                            Deblur Image
                                                         </button>
                                                     </>
                                                 ) : (
                                                     <div className="text-center py-12">
-                                                        <Loader className={`w-16 h-16 mx-auto animate-spin ${
-                                                            aiMode === 'deblur' ? 'text-blue-600' : 'text-purple-600'
-                                                        } mb-4`} />
+                                                        <Loader className="w-16 h-16 mx-auto animate-spin text-blue-600 mb-4" />
                                                         <p className="text-xl font-semibold text-gray-900 mb-2">
-                                                            {loadingMessages[aiMode][currentLoadingMessage]}
+                                                            {loadingMessages[currentLoadingMessage]}
                                                         </p>
                                                         <p className="text-sm text-gray-500">
-                                                            {aiMode === 'deblur' 
-                                                                ? 'Restoring your image... (10-30 seconds)'
-                                                                : 'This may take a few moments...'
-                                                            }
+                                                            Restoring your image... (10-30 seconds)
                                                         </p>
                                                     </div>
                                                 )}
@@ -897,10 +809,7 @@
                                     <div className="space-y-6">
                                         <div className="flex justify-between items-center">
                                             <h3 className="text-2xl font-bold text-gray-900">
-                                                {aiMode === 'deblur' 
-                                                    ? 'Your Restored Image' 
-                                                    : 'Your AI-Generated Image'
-                                                }
+                                                Your Restored Image
                                             </h3>
                                             <button
                                                 onClick={() => {
@@ -959,7 +868,7 @@
                                             />
                                             <div className="flex justify-between text-sm text-gray-500 mt-2">
                                                 <span>Original</span>
-                                                <span>{aiMode === 'deblur' ? 'Deblurred' : 'AI Generated'}</span>
+                                                <span>Deblurred</span>
                                             </div>
                                         </div>
                                         
@@ -967,18 +876,14 @@
                                         <div className="grid grid-cols-2 gap-4">
                                             <button
                                                 onClick={handleDownload}
-                                                className={`${
-                                                    aiMode === 'deblur' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-purple-600 hover:bg-purple-700'
-                                                } text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2`}
+                                                className="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
                                             >
                                                 <Download className="w-5 h-5" />
                                                 Download
                                             </button>
                                             <button
                                                 onClick={handleShare}
-                                                className={`${
-                                                    aiMode === 'deblur' ? 'bg-blue-700 hover:bg-blue-800' : 'bg-pink-600 hover:bg-pink-700'
-                                                } text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2`}
+                                                className="bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
                                             >
                                                 <Share className="w-5 h-5" />
                                                 Share
